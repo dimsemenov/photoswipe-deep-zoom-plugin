@@ -19,7 +19,7 @@ import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js';
 
 const lightbox = new PhotoSwipeLightbox({
   gallery: '#gallery',
-  child: '.pswp-gallery__item',
+  children: '.pswp-gallery__item',
   pswpModule: 'lib/photoswipe/photoswipe.esm.js',
 
   // Recommended PhotoSwipe options for this plugin
