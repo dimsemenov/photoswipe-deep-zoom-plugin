@@ -1,0 +1,29 @@
+{
+  "name": "photoswipe-deep-zoom-plugin",
+  "version": "1.0.0",
+  "description": "A plugin that adds tile-based zoom support to PhotoSwipe. Supports Deepzoom and Zoomify tile formats.",
+  "main": "photoswipe-deep-zoom-plugin.esm.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "gh-pages": "^3.2.3",
+    "rollup": "^2.57.0",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "publish:demo": "npm run build && gh-pages -d ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dimsemenov/photoswipe-deep-zoom-plugin.git"
+  },
+  "author": "",
+  "bugs": {
+    "url": "https://github.com/dimsemenov/photoswipe-deep-zoom-plugin/issues"
+  },
+  "homepage": "https://github.com/dimsemenov/photoswipe-deep-zoom-plugin#readme"
+}

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width"/>
+    <link rel="stylesheet" href="./lib/photoswipe/photoswipe.css">
+
+    <!-- demo styles, ignore em-->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+        font-size: 14px;
+        line-height: 20px;
+        background: #eee;
+      }
+      h1 {
+        margin: 0;
+        padding: 50px 50px 30px 50px;
+        font-size: 26px;
+        line-height: 1.3;
+      }
+      .pswp-gallery__item {
+        margin: 0 4px 4px 0;
+      }
+      .pswp-gallery__item img {
+        display: block;
+        max-width: 60px;
+        height: auto;
+      }
+      .pswp-gallery {
+        max-width: 700px;
+        padding: 0 50px 20px;
+        background: #eee;
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+      }
+      .pswp__dynamic-caption {
+        color: #fff;
+        width: 100%;
+      }
+      .pswp__dynamic-caption a {
+        color: #fff;
+        text-decoration: underline;
+      }
+
+      .pswp-test {
+        margin-left:50px;
+        margin-bottom: 40px;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+      }
+      .pswp-test label {
+        background: #fbfbfb;
+        padding: 4px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        font-size: 16px;
+        line-height: 1;
+      }
+      p {
+        padding: 4px 50px;
+        max-width: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-page-content">
+    <h1>Deep zoom plugin</h1>
+
+    <p>
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    </p>
+    
+    <div class="pswp-gallery" id="gallery">
+
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/a-sergeant-of-the-light-horse/full.jpg" 
+          data-pswp-width="1635"
+          data-pswp-height="2048"
+
+          data-pswp-tile-type="zoomify"
+          data-pswp-tile-url="img/a-sergeant-of-the-light-horse/TileGroup{zoomify_group}/{z}-{x}-{y}.jpg"
+          data-pswp-tile-size="256"
+          data-pswp-max-width="4578"
+          data-pswp-max-height="5736"
+          
+          target="_blank">
+          <img src="img/a-sergeant-of-the-light-horse/TileGroup0/0-0-0.jpg" alt="A sergeant of the Light Horse" />
+        </a>
+        <div class="pswp-caption-content">
+          A single image with no subnavigation.
+        </div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/starry/starry_files/full.jpg" 
+          data-pswp-width="1700"
+          data-pswp-height="1346"
+          data-pswp-tile-url="img/starry/starry_files/{z}/{x}_{y}.jpeg"
+          data-pswp-tile-size="254"
+          data-pswp-tile-overlap="1"
+          data-pswp-max-width="30000"
+          data-pswp-max-height="23756"
+          target="_blank">
+          <img src="img/starry/starry_files/8/0_0.jpeg" alt="Single demo image" />
+        </a>
+        <div class="pswp-caption-content">
+          A single image with no subnavigation.
+        </div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          data-pswp-group-id="1"
+          href="https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg" 
+          data-pswp-width="1875" 
+          data-pswp-height="2500" 
+          target="_blank"
+          data-pswp-subimages="">
+          <img src="https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg" alt="Demo image" />
+        </a>
+        <div class="pswp-caption-content"><b>Two images</b><br>Color photograph<br>12 x 10</div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/old-map/full.jpg"
+          data-pswp-width="1700"
+          data-pswp-height="1285"
+          data-pswp-tile-url="img/old-map/{z}/{x}_{y}.jpeg"
+          data-pswp-tile-size="254"
+          data-pswp-tile-overlap="1"
+          data-pswp-max-width="5832"
+          data-pswp-max-height="4409"
+          target="_blank">
+          <img src="img/old-map/7/0_0.jpeg" alt="Demo map" />
+        </a>
+        <div class="pswp-caption-content">
+          <b>Lorem ipsum dolor (1933)</b><br>Color photograph<br>12 x 10
+        </div>
+      </div>
+
+     
+    
+    </div>
+
+    <div class="pswp-test">
+        <label for="display_layer_borders">
+          <input type="checkbox" id="display_layer_borders" name="display_layer_borders">Display layer borders
+        </label>
+    </div>
+    <script>
+      /* debug stuff */
+      window.pswpTempTestVars = {
+        display_layer_borders: false,
+      };
+      for(let key in window.pswpTempTestVars) {
+        document.querySelector('#' + key).checked = window.pswpTempTestVars[key];
+      }
+      [...document.querySelectorAll('.pswp-test input')].forEach((checkbox) => {
+        checkbox.addEventListener('change', (e) => {
+          if (e.currentTarget.checked) {
+            window.pswpTempTestVars[e.currentTarget.name] = true;
+          } else {
+            window.pswpTempTestVars[e.currentTarget.name] = false;
+          }
+        });
+      });
+    </script>
+
+    <script type="module">
+      import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
+      import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js';
+
+      const lightbox = new PhotoSwipeLightbox({
+        gallerySelector: '#gallery',
+        childSelector: '.pswp-gallery__item',
+    
+        pswpModule: window.location.href + 'lib/photoswipe/photoswipe.esm.js',
+
+        
+        // Recommended PhotoSwipe options for this plugin
+        allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
+        allowMouseDrag: true, // display dragging cursor at max zoom level
+        wheelToZoom: true, // enable wheel-based zoom
+        preloader: false, // disable default loading indicator
+        zoom: false // disable default zoom button
+      });
+
+      const deepZoomPlugin = new PhotoSwipeDeepZoom(lightbox, {
+
+      });
+
+      lightbox.init();
+      </script>
+
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+      </p>
+
+    </div>
+  </body>
+</html>
