@@ -8,10 +8,9 @@ Unlike conventional viewers such as [OpenLayers](https://openlayers.org/en/lates
 
 If you just want to display a single tiled image, consider using OpenLayers, OpenSeaDragon or Leaflet.
 
-
 ### Initialization
 
-The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab it from the [dist/](dist/), an example is there too.
+The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab it from the [dist/](dist/), an example is there too. To view source code visit [src/](directory).
 
 ```js
 import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
@@ -155,6 +154,14 @@ Will permanently display a low-resolution layer below the active one.
 
 ### Build
 
+To build and minify JS in `dist/`:
+
 ```
 npm run build
+```
+
+To update GitHub pages:
+
+```
+npm run publish:demo
 ```
