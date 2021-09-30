@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width"/>
+    <link rel="stylesheet" href="./lib/photoswipe/photoswipe.css">
+
+    <!-- demo styles, ignore em-->
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;
+        font-size: 14px;
+        line-height: 20px;
+        background: #eee;
+      }
+      h1 {
+        margin: 0;
+        padding: 50px 50px 30px 50px;
+        font-size: 26px;
+        line-height: 1.3;
+      }
+      .pswp-gallery__item img {
+        display: block;
+        max-width: 90px;
+        margin-bottom: 4px;
+        height: auto;
+      }
+      .pswp-gallery {
+        max-width: 600px;
+        padding: 20px 50px 20px;
+        background: #eee;
+        position: relative;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .pswp-test {
+        margin-left:50px;
+        margin-bottom: 40px;
+        display: flex;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: flex-start;
+      }
+      .pswp-test label {
+        background: #fbfbfb;
+        padding: 4px;
+        border-radius: 4px;
+        margin-bottom: 6px;
+        font-size: 16px;
+        line-height: 1;
+      }
+      p {
+        padding: 4px 50px 8px;
+        margin: 0;
+        max-width: 600px;
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="main-page-content">
+    <h1><a href="https://github.com/dimsemenov/photoswipe-deep-zoom-plugin">Deep Zoom plugin</a> for the <a href="https://photoswipe.com">PhotoSwipe</a></h1>
+    <p>
+      A plugin that adds tile-based zoom support to PhotoSwipe. Supports Deepzoom and Zoomify tile formats.
+    </p>
+    <p>Unlike conventional viewers such as <a href="https://openlayers.org/en/latest/examples/zoomify.html" rel="nofollow">OpenLayers</a> or <a href="https://openseadragon.github.io/" rel="nofollow">OpenSeaDragon</a>, it displays tiles only when user zooms beyond the primary image size. If user does not zoom - PhotoSwipe operates as usual.</p> 
+    <p>Also adds incremental zoom buttons and overrides double-tap behaviour.</p>
+    <div class="pswp-gallery" id="gallery">
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/starry/starry_files/full.jpg" 
+          data-pswp-width="1700"
+          data-pswp-height="1346"
+          data-pswp-tile-url="img/starry/starry_files/{z}/{x}_{y}.jpeg"
+          data-pswp-tile-size="254"
+          data-pswp-tile-overlap="1"
+          data-pswp-max-width="30000"
+          data-pswp-max-height="23756"
+          target="_blank">
+          <img src="img/starry/starry_files/8/0_0.jpeg" alt="Single demo image" />
+        </a>
+        <div class="caption">
+          <a href="https://en.wikipedia.org/wiki/The_Starry_Night"><strong>The Starry Night</strong></a>
+          <br>
+          Vincent van Gogh
+          <br>
+          DeepZoom tile format
+          <br>
+          size 30000x23756px
+        </div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/old-map/full.jpg"
+          data-pswp-width="1700"
+          data-pswp-height="1285"
+          data-pswp-tile-url="img/old-map/{z}/{x}_{y}.jpeg"
+          data-pswp-tile-size="254"
+          data-pswp-tile-overlap="1"
+          data-pswp-max-width="5832"
+          data-pswp-max-height="4409"
+          target="_blank">
+          <img src="img/old-map/7/0_0.jpeg" alt="Demo map" />
+        </a>
+        <div class="pswp-caption-content">
+          <div class="caption">
+            <a href="https://en.wikipedia.org/wiki/Cambriae_Typus"><strong>Cambriae Typus</strong></a>
+            <br>
+            Humphrey Llwyd
+          </div>
+        </div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          href="img/a-sergeant-of-the-light-horse/full.jpg" 
+          data-pswp-width="1635"
+          data-pswp-height="2048"
+
+          data-pswp-tile-type="zoomify"
+          data-pswp-tile-url="img/a-sergeant-of-the-light-horse/TileGroup{zoomify_group}/{z}-{x}-{y}.jpg"
+          data-pswp-tile-size="256"
+          data-pswp-max-width="4578"
+          data-pswp-max-height="5736"
+          
+          target="_blank">
+          <img src="img/a-sergeant-of-the-light-horse/TileGroup0/0-0-0.jpg" alt="A sergeant of the Light Horse" />
+        </a>
+        <div class="caption">
+          <a href="https://nga.gov.au/exhibition/lambert/detail.cfm?IRN=162564"><strong>A sergeant of the Light Horse</strong></a>
+          <br>
+          George Lambert
+          <br>
+          Zoomify tile format
+        </div>
+      </div>
+
+      <div class="pswp-gallery__item">
+        <a  
+          data-pswp-group-id="1"
+          href="https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-2500.jpg" 
+          data-pswp-width="1875" 
+          data-pswp-height="2500" 
+          target="_blank"
+          data-pswp-subimages="">
+          <img src="https://cdn.photoswipe.com/photoswipe-demo-images/photos/1/img-200.jpg" alt="Demo image" />
+        </a>
+        <div class="caption">
+          Non-tiled image<br>photo by <a href="https://www.instagram.com/dreamypixels/">Ales Krivec</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="pswp-test">
+        <label for="display_layer_borders">
+          <input type="checkbox" id="display_layer_borders" name="display_layer_borders">Display layer borders
+        </label>
+    </div>
+    <script>
+      /* debug stuff */
+      window.pswpTempTestVars = {
+        display_layer_borders: false,
+      };
+      for(let key in window.pswpTempTestVars) {
+        document.querySelector('#' + key).checked = window.pswpTempTestVars[key];
+      }
+      [...document.querySelectorAll('.pswp-test input')].forEach((checkbox) => {
+        checkbox.addEventListener('change', (e) => {
+          if (e.currentTarget.checked) {
+            window.pswpTempTestVars[e.currentTarget.name] = true;
+          } else {
+            window.pswpTempTestVars[e.currentTarget.name] = false;
+          }
+        });
+      });
+    </script>
+
+    <script type="module">
+      import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
+      import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js';
+
+      const lightbox = new PhotoSwipeLightbox({
+        gallery: '#gallery',
+        children: '.pswp-gallery__item > a',
+    
+        pswpModule: window.location.href + 'lib/photoswipe/photoswipe.esm.js',
+        
+        // Recommended PhotoSwipe options for this plugin
+        allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
+        allowMouseDrag: true, // display dragging cursor at max zoom level
+        wheelToZoom: true, // enable wheel-based zoom
+        preloader: false, // disable default loading indicator
+        zoom: false // disable default zoom button
+      });
+
+      const deepZoomPlugin = new PhotoSwipeDeepZoom(lightbox, {
+
+      });
+
+      lightbox.init();
+      </script>
+    </div>
+  </body>
+</html>
