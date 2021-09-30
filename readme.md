@@ -10,7 +10,7 @@ If you just want to display a single tiled image, consider using OpenLayers, Ope
 
 ### Initialization
 
-The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab it from the [dist/](dist/), an example is there too. To view source code visit [src/](directory).
+The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab it from the [dist/](dist/), an example is there too. To view source code visit [src/](src/).
 
 ```js
 import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
