@@ -1,5 +1,7 @@
 # PhotoSwipe Tiled Deep Zoom Plugin
 
+**[> Plugin demo <](https://dimsemenov.github.io/photoswipe-deep-zoom-plugin/)**
+
 A plugin that adds tile-based zoom support to PhotoSwipe. Supports Deepzoom and Zoomify tile formats. 
 
 Unlike conventional viewers such as [OpenLayers](https://openlayers.org/en/latest/examples/zoomify.html) or [OpenSeaDragon](https://openseadragon.github.io/), it displays tiles only when user zooms beyond the primary image size. If user does not zoom - PhotoSwipe operates as usual.
