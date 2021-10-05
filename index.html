@@ -180,14 +180,14 @@
     </script>
 
     <script type="module">
-      import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
-      import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js';
+      import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js?v=5.1.6';
+      import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js?v=1.0.1';
 
       const lightbox = new PhotoSwipeLightbox({
         gallery: '#gallery',
         children: '.pswp-gallery__item > a',
     
-        pswpModule: window.location.href + 'lib/photoswipe/photoswipe.esm.js',
+        pswpModule: './photoswipe.esm.js?v=5.1.6',
         
         // Recommended PhotoSwipe options for this plugin
         allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
