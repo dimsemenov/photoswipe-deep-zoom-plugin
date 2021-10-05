@@ -150,6 +150,7 @@ class DeepZoomUI {
 
   updateZoomInButtonState(el) {
     if (!this.pswp.currSlide.currZoomLevel ||
+      !this.pswp.currSlide.isZoomable() ||
       this.pswp.currSlide.currZoomLevel >= this.pswp.currSlide.zoomLevels.secondary) {
       el.setAttribute('disabled', 'disabled');
     } else {
@@ -158,7 +159,8 @@ class DeepZoomUI {
   }
 
   updateZoomOutButtonState(el) {
-    if (!this.pswp.currSlide.currZoomLevel || 
+    if (!this.pswp.currSlide.currZoomLevel ||
+      !this.pswp.currSlide.isZoomable() ||
       this.pswp.currSlide.currZoomLevel <= this.pswp.currSlide.zoomLevels.fit) {
       el.setAttribute('disabled', 'disabled');
     } else {
