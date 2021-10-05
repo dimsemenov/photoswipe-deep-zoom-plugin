@@ -567,7 +567,9 @@ class ImageContent extends Content {
     // that's because I want to show image before it's fully loaded,
     // as browser can render parts of image while it is loading.
     if (this.slide && !this.slide.isActive && ('decode' in this.element)) {
+      this.isDecoding = true;
       this.element.decode().finally(() => {
+        this.isDecoding = false;
         this.appendImageTo(container);
       });
     } else {
@@ -576,7 +578,7 @@ class ImageContent extends Content {
   }
 
   activate() {
-    if (this.slide && this.slide.container) {
+    if (this.slide && this.slide.container && this.isDecoding) {
       this.appendImageTo(this.slide.container);
     }
   }
