@@ -151,6 +151,10 @@ Zoom in and zoom out buttons in the toolbar.
 
 Will permanently display a low-resolution layer below the active one.
 
+### `forceWillChange: true`
+
+Will apply `will-change:transform` to the placeholder and the primary PhotoSwipe image.
+
 
 ### Build
 
