@@ -1324,6 +1324,7 @@ class DeepZoomUI {
 
   updateZoomInButtonState(el) {
     if (!this.pswp.currSlide.currZoomLevel ||
+      !this.pswp.currSlide.isZoomable() ||
       this.pswp.currSlide.currZoomLevel >= this.pswp.currSlide.zoomLevels.secondary) {
       el.setAttribute('disabled', 'disabled');
     } else {
@@ -1332,7 +1333,8 @@ class DeepZoomUI {
   }
 
   updateZoomOutButtonState(el) {
-    if (!this.pswp.currSlide.currZoomLevel || 
+    if (!this.pswp.currSlide.currZoomLevel ||
+      !this.pswp.currSlide.isZoomable() ||
       this.pswp.currSlide.currZoomLevel <= this.pswp.currSlide.zoomLevels.fit) {
       el.setAttribute('disabled', 'disabled');
     } else {
@@ -1348,6 +1350,8 @@ const defaultOptions = {
   tileWidth: 256,
   tileOverlap: 0,
   incrementalZoomButtons: true,
+
+  forceWillChange: true,
 
   cacheLimit: 200,
   maxDecodingCount: 15,
@@ -1487,34 +1491,33 @@ class PhotoSwipeDeepZoom {
   updateTilerSize(slide) {
     const scaleMultiplier = slide.currentResolution || slide.zoomLevels.initial;
 
-    if (slide.tiler && slide.isActive) {   
-      
-      // TODO: make this configurable?
-      slide.image.style.willChange = 'transform';
-      slide.image.style.zIndex = 7;
+    if (slide.tiler && slide.isActive) {
+      const slideImage = slide.content.element;
+
       if (slide.placeholder) {
-        slide.placeholder.style.willChange = 'transform';
-        slide.placeholder.style.zIndex = 5;
+        this._setImgStyles(slide.placeholder.element, 5);
       }
+
+      this._setImgStyles(slideImage, 7);
 
       const width = Math.round(slide.width * scaleMultiplier);
       const height = Math.round(slide.height * scaleMultiplier);
 
-      if (width >= slide.primaryImageWidth && slide.image) {
-        if (slide.image.srcset) {
+      if (width >= slide.primaryImageWidth) {
+        if (slideImage.srcset) {
           // adjust sizes attribute so it's based on primary image size,
           // and not based on full (tiled) size
-          slide.image.sizes = slide.primaryImageWidth + 'px';
-          slide.image.dataset.largestUsedSize = width;
+          slideImage.sizes = slide.primaryImageWidth + 'px';
+          slideImage.dataset.largestUsedSize = width;
         }
 
         // scale image instead of changing width/height
-        slide.image.style.width = slide.primaryImageWidth + 'px';
+        slideImage.style.width = slide.primaryImageWidth + 'px';
         const scale  = width / slide.primaryImageWidth;
-        slide.image.style.transform = 'scale3d('+scale+','+scale+',1)';
-        slide.image.style.transformOrigin = '0 0';
+        slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
+        slideImage.style.transformOrigin = '0 0';
       } else {
-        slide.image.style.transform = 'none';
+        slideImage.style.transform = 'none';
       }
 
       slide.tiler.setSize(width, height);
@@ -1557,6 +1560,15 @@ class PhotoSwipeDeepZoom {
     }
 
     itemData.tileOverlap = parseInt(linkEl.dataset.pswpTileOverlap, 10) || 0;
+  }
+
+  _setImgStyles(el, zIndex) {
+    if (el && el.tagName === 'IMG') {
+      el.style.zIndex = zIndex;
+      if (this.options.forceWillChange) {
+        el.style.willChange = 'transform';
+      }
+    }
   }
 }
 

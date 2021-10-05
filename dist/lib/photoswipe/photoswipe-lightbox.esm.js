@@ -1,5 +1,5 @@
 /*!
-  * PhotoSwipe Lightbox 5.1.5 - https://photoswipe.com
+  * PhotoSwipe Lightbox 5.1.6 - https://photoswipe.com
   * (c) 2021 Dmitry Semenov
   */
 /**
@@ -9,6 +9,32 @@
   * @param {String|NULL} tagName
   * @param {Element|NULL} appendToEl
   */
+function createElement(className, tagName, appendToEl) {
+  const el = document.createElement(tagName || 'div');
+  if (className) {
+    el.className = className;
+  }
+  if (appendToEl) {
+    appendToEl.appendChild(el);
+  }
+  return el;
+}
+
+/**
+ * Apply width and height CSS properties to element
+ */
+function setWidthHeight(el, w, h) {
+  el.style.width = (typeof w === 'number') ? (w + 'px') : w;
+  el.style.height = (typeof h === 'number') ? (h + 'px') : h;
+}
+
+const LOAD_STATE = {
+  IDLE: 'idle',
+  LOADING: 'loading',
+  LOADED: 'loaded',
+  ERROR: 'error',
+};
+
 
 /**
  * Check if click or keydown event was dispatched
@@ -228,35 +254,38 @@ class ZoomLevel {
  * thus it can be called before dialog is opened.
  *
  * @param {Object} itemData Data about the slide
- * @param {Object}  instance PhotoSwipe or PhotoSwipeLightbox eventable instance
- * @param {Boolean}  decode Wether decode() should be used.
+ * @param {PhotoSwipeBase}  instance PhotoSwipe or PhotoSwipeLightbox
  * @returns {Object|Boolean} Image that is being decoded or false.
  */
-function lazyLoadData(itemData, instance, decode) {
-  if (itemData.src && itemData.w && itemData.h) {
-    const { options } = instance;
+function lazyLoadData(itemData, instance) {
+  const ContentClass = instance.getContentClass(itemData);
 
-    // We need to know dimensions of the image to preload it,
-    // as it might use srcset and we need to define sizes
-    const viewportSize = instance.viewportSize || getViewportSize(options);
-    const panAreaSize = getPanAreaSize(options, viewportSize);
-
-    const zoomLevel = new ZoomLevel(options, itemData, -1);
-    zoomLevel.update(itemData.w, itemData.h, panAreaSize);
-
-    const image = document.createElement('img');
-    image.decoding = 'async';
-    image.sizes = Math.ceil(itemData.w * zoomLevel.initial) + 'px';
-    if (itemData.srcset) {
-      image.srcset = itemData.srcset;
-    }
-    image.src = itemData.src;
-    if (decode && ('decode' in image)) {
-      image.decode();
-    }
-
-    return image;
+  if (!ContentClass) {
+    return;
   }
+
+  // src/slide/content/content.js
+  const content = new ContentClass(itemData, instance);
+
+  if (!content.lazyLoad) {
+    return;
+  }
+
+  const { options } = instance;
+
+  // We need to know dimensions of the image to preload it,
+  // as it might use srcset and we need to define sizes
+  const viewportSize = instance.viewportSize || getViewportSize(options);
+  const panAreaSize = getPanAreaSize(options, viewportSize);
+
+  const zoomLevel = new ZoomLevel(options, itemData, -1);
+  zoomLevel.update(content.width, content.height, panAreaSize);
+
+  content.lazyLoad();
+  content.setDisplayedSize(
+    Math.ceil(content.width * zoomLevel.initial),
+    Math.ceil(content.height * zoomLevel.initial)
+  );
 }
 
 /**
@@ -353,12 +382,234 @@ class Eventable {
   }
 }
 
+class Content {
+  /**
+   * @param {Object} itemData Slide data
+   * @param {PhotoSwipeBase} instance PhotoSwipe or PhotoSwipeLightbox instance
+   * @param {Slide|undefined} slide Slide that requested the image,
+   *                                can be undefined if image was requested by something else
+   *                                (for example by lazy-loader)
+   */
+  constructor(itemData, instance, slide) {
+    this.options = instance.options;
+    this.instance = instance;
+    this.data = itemData;
+
+    if (slide) {
+      this.slide = slide;
+      this.pswp = slide.pswp;
+    }
+
+    this.width = Number(this.data.w) || Number(this.data.width) || 0;
+    this.height = Number(this.data.h) || Number(this.data.height) || 0;
+
+    this.state = LOAD_STATE.IDLE;
+  }
+
+  /**
+   * Load the content
+   *
+   * @param {Boolean} isLazy If method is executed by lazy-loader
+   */
+  load(/* isLazy */) {
+    if (!this.element) {
+      this.element = createElement('pswp__content');
+      this.element.style.position = 'absolute';
+      this.element.style.left = 0;
+      this.element.style.top = 0;
+      this.element.innerHTML = this.data.html || '';
+    }
+  }
+
+  isZoomable() {
+    return false;
+  }
+
+  usePlaceholder() {
+    return false;
+  }
+
+  activate() {
+
+  }
+
+  deactivate() {
+
+  }
+
+  setDisplayedSize(width, height) {
+    if (this.element) {
+      setWidthHeight(this.element, width, height);
+    }
+  }
+
+  onLoaded() {
+    this.state = LOAD_STATE.LOADED;
+
+    if (this.slide) {
+      this.pswp.dispatch('loadComplete', { slide: this.slide });
+    }
+  }
+
+  onError() {
+    this.state = LOAD_STATE.ERROR;
+
+    if (this.slide) {
+      this.pswp.dispatch('loadComplete', { slide: this.slide, isError: true });
+      this.pswp.dispatch('loadError', { slide: this.slide });
+    }
+  }
+
+  getErrorElement() {
+    return false;
+  }
+
+  appendTo(container) {
+    if (this.element && !this.element.parentNode) {
+      container.appendChild(this.element);
+    }
+  }
+
+  destroy() {
+
+  }
+}
+
+class ImageContent extends Content {
+  load(/* isLazy */) {
+    if (this.element) {
+      return;
+    }
+
+    const imageSrc = this.data.src;
+
+    if (!imageSrc) {
+      return;
+    }
+
+    this.element = createElement('pswp__img', 'img');
+
+    if (this.data.srcset) {
+      this.element.srcset = this.data.srcset;
+    }
+
+    this.element.src = imageSrc;
+
+    this.element.alt = this.data.alt || '';
+
+    this.state = LOAD_STATE.LOADING;
+
+    if (this.element.complete) {
+      this.onLoaded();
+    } else {
+      this.element.onload = () => {
+        this.onLoaded();
+      };
+
+      this.element.onerror = () => {
+        this.onError();
+      };
+    }
+  }
+
+  setDisplayedSize(width, height) {
+    const image = this.element;
+    if (image) {
+      setWidthHeight(image, width, 'auto');
+
+      // Handle srcset sizes attribute.
+      //
+      // Never lower quality, if it was increased previously.
+      // Chrome does this automatically, Firefox and Safari do not,
+      // so we store largest used size in dataset.
+      if (image.srcset
+          && (!image.dataset.largestUsedSize || width > image.dataset.largestUsedSize)) {
+        image.sizes = width + 'px';
+        image.dataset.largestUsedSize = width;
+      }
+
+      if (this.slide) {
+        this.pswp.dispatch('imageSizeChange', { slide: this.slide, width, height });
+      }
+    }
+  }
+
+  isZoomable() {
+    return (this.state !== LOAD_STATE.ERROR);
+  }
+
+  usePlaceholder() {
+    return true;
+  }
+
+  lazyLoad() {
+    this.load();
+  }
+
+  destroy() {
+    if (this.element) {
+      this.element.onload = null;
+      this.element.onerror = null;
+      this.element = null;
+    }
+  }
+
+  appendTo(container) {
+    // Use decode() on nearby slides
+    //
+    // Nearby slide images are in DOM and not hidden via display:none.
+    // However, they are placed offscreen (to the left and right side).
+    //
+    // Some browsers do not composite the image until it's actually visible,
+    // using decode() helps.
+    //
+    // You might ask "why dont you just decode() and then append all images",
+    // that's because I want to show image before it's fully loaded,
+    // as browser can render parts of image while it is loading.
+    if (this.slide && !this.slide.isActive && ('decode' in this.element)) {
+      this.element.decode().finally(() => {
+        this.appendImageTo(container);
+      });
+    } else {
+      this.appendImageTo(container);
+    }
+  }
+
+  activate() {
+    if (this.slide && this.slide.container) {
+      this.appendImageTo(this.slide.container);
+    }
+  }
+
+  getErrorElement() {
+    const el = createElement('pswp__error-msg-container');
+    el.innerHTML = this.options.errorMsg;
+    const linkEl = el.querySelector('a');
+    if (linkEl) {
+      linkEl.href = this.data.src;
+    }
+    return el;
+  }
+
+  appendImageTo(container) {
+    // ensure that element exists and is not already appended
+    if (this.element && !this.element.parentNode) {
+      container.appendChild(this.element);
+    }
+  }
+}
+
 /**
  * PhotoSwipe base class that can retrieve data about every slide.
  * Shared by PhotoSwipe Core and PhotoSwipe Lightbox
  */
 
 class PhotoSwipeBase extends Eventable {
+  constructor() {
+    super();
+    this.contentTypes = {};
+  }
+
   /**
    * Get total number of slides
    */
@@ -388,6 +639,37 @@ class PhotoSwipeBase extends Eventable {
     });
 
     return event.numItems;
+  }
+
+  /**
+   * Add or set slide content type
+   *
+   * @param {String} type
+   * @param {Class} ContentClass
+   */
+  addContentType(type, ContentClass) {
+    this.contentTypes[type] = ContentClass;
+  }
+
+  /**
+   * Get slide content class based on its data
+   *
+   * @param {Object} slideData
+   * @param {Integer} slideIndex
+   * @returns Class
+   */
+  getContentClass(slideData) {
+    let cType = 'image';
+
+    if (slideData.type && this.contentTypes[slideData.type]) {
+      cType = slideData.type;
+    } else if (slideData.src) {
+      return ImageContent;
+    } else if (slideData.html) {
+      return Content;
+    }
+
+    return this.contentTypes[cType];
   }
 
   /**
@@ -476,6 +758,10 @@ class PhotoSwipeBase extends Eventable {
 
     itemData.w = parseInt(linkEl.dataset.pswpWidth, 10);
     itemData.h = parseInt(linkEl.dataset.pswpHeight, 10);
+
+    if (linkEl.dataset.pswpType) {
+      itemData.type = linkEl.dataset.pswpType;
+    }
 
     const thumbnailEl = element.querySelector('img');
 
@@ -681,6 +967,9 @@ class PhotoSwipeLightbox extends PhotoSwipeBase {
       });
     });
 
+    // same with content types
+    pswp.contentTypes = { ...this.contentTypes };
+
     pswp.on('destroy', () => {
       // clean up public variables
       this.pswp = null;
@@ -705,5 +994,5 @@ class PhotoSwipeLightbox extends PhotoSwipeBase {
   }
 }
 
-export { PhotoSwipeLightbox as default };
+export { Content, ImageContent, PhotoSwipeLightbox as default };
 //# sourceMappingURL=photoswipe-lightbox.esm.js.map
