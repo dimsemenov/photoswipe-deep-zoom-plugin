@@ -1498,26 +1498,32 @@ class PhotoSwipeDeepZoom {
         this._setImgStyles(slide.placeholder.element, 5);
       }
 
-      this._setImgStyles(slideImage, 7);
+      
 
       const width = Math.round(slide.width * scaleMultiplier);
       const height = Math.round(slide.height * scaleMultiplier);
 
-      if (width >= slide.primaryImageWidth) {
-        if (slideImage.srcset) {
-          // adjust sizes attribute so it's based on primary image size,
-          // and not based on full (tiled) size
-          slideImage.sizes = slide.primaryImageWidth + 'px';
-          slideImage.dataset.largestUsedSize = width;
-        }
+      if (slideImage) {
+        this._setImgStyles(slideImage, 7);
+        if (width >= slide.primaryImageWidth) {
+          if (slideImage.srcset) {
+            // adjust sizes attribute so it's based on primary image size,
+            // and not based on full (tiled) size
+            if(!slideImage.dataset.largestUsedSize 
+                || slide.primaryImageWidth > slideImage.dataset.largestUsedSize) {
+              slideImage.sizes = slide.primaryImageWidth + 'px';
+            }
+            slideImage.dataset.largestUsedSize = width;
+          }
 
-        // scale image instead of changing width/height
-        slideImage.style.width = slide.primaryImageWidth + 'px';
-        const scale  = width / slide.primaryImageWidth;
-        slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
-        slideImage.style.transformOrigin = '0 0';
-      } else {
-        slideImage.style.transform = 'none';
+          // scale image instead of changing width/height
+          slideImage.style.width = slide.primaryImageWidth + 'px';
+          const scale  = width / slide.primaryImageWidth;
+          slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
+          slideImage.style.transformOrigin = '0 0';
+        } else {
+          slideImage.style.transform = 'none';
+        }
       }
 
       slide.tiler.setSize(width, height);
