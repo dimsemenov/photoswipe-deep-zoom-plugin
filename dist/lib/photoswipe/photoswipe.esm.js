@@ -1,5 +1,5 @@
 /*!
-  * PhotoSwipe 5.1.6 - https://photoswipe.com
+  * PhotoSwipe 5.1.7 - https://photoswipe.com
   * (c) 2021 Dmitry Semenov
   */
 /**
@@ -305,6 +305,87 @@ class DOMEvents {
   }
 }
 
+function getViewportSize(options, pswp) {
+  if (options.getViewportSizeFn) {
+    const newViewportSize = options.getViewportSizeFn(options, pswp);
+    if (newViewportSize) {
+      return newViewportSize;
+    }
+  }
+
+  return {
+    x: document.documentElement.clientWidth,
+
+    // TODO: height on mobile is very incosistent due to toolbar
+    // find a way to improve this
+    //
+    // document.documentElement.clientHeight - doesn't seem to work well
+    y: window.innerHeight
+  };
+}
+
+/**
+ * Parses padding option.
+ * Supported formats:
+ *
+ * // Object
+ * padding: {
+ *  top: 0,
+ *  bottom: 0,
+ *  left: 0,
+ *  right: 0
+ * }
+ *
+ * // A function that returns the object
+ * paddingFn: (viewportSize) => {
+ *  return {
+ *    top: 0,
+ *    bottom: 0,
+ *    left: 0,
+ *    right: 0
+ *  };
+ * }
+ *
+ * // Legacy variant
+ * paddingLeft: 0,
+ * paddingRight: 0,
+ * paddingTop: 0,
+ * paddingBottom: 0,
+ *
+ * @param {String} prop 'left', 'top', 'bottom', 'right'
+ * @param {Object} options PhotoSwipe options
+ * @param {Object} viewportSize PhotoSwipe viewport size, for example: { x:800, y:600 }
+ * @returns {Number}
+ */
+function parsePaddingOption(prop, options, viewportSize) {
+  let paddingValue;
+
+  if (options.paddingFn) {
+    paddingValue = options.paddingFn(viewportSize)[prop];
+  } else if (options.padding) {
+    paddingValue = options.padding[prop];
+  } else {
+    const legacyPropName = 'padding' + prop[0].toUpperCase() + prop.slice(1);
+    if (options[legacyPropName]) {
+      paddingValue = options[legacyPropName];
+    }
+  }
+
+  return paddingValue || 0;
+}
+
+
+function getPanAreaSize(options, viewportSize/*, pswp*/) {
+  return {
+    x: viewportSize.x
+      - parsePaddingOption('left', options, viewportSize)
+      - parsePaddingOption('right', options, viewportSize),
+    y: viewportSize.y
+      - parsePaddingOption('top', options, viewportSize)
+      - parsePaddingOption('bottom', options, viewportSize)
+  };
+}
+
 /**
  * Calculates minimum, maximum and initial (center) bounds of a slide
  */
@@ -337,9 +418,10 @@ class PanBounds {
 
   // _calculateItemBoundsForAxis
   _updateAxis(axis) {
+    const { pswp } = this.slide;
     const elSize = this.slide[axis === 'x' ? 'width' : 'height'] * this.currZoomLevel;
-    const paddingProp = axis === 'x' ? 'Left' : 'Top';
-    const padding = this.slide.pswp.options['padding' + paddingProp] || 0;
+    const paddingProp = axis === 'x' ? 'left' : 'top';
+    const padding = parsePaddingOption(paddingProp, pswp.options, pswp.viewportSize);
 
     const panAreaSize = this.slide.panAreaSize[axis];
 
@@ -384,7 +466,7 @@ class PanBounds {
  * Depends on viewport size and image size.
  */
 
-const MAX_IMAGE_WIDTH = 3000;
+const MAX_IMAGE_WIDTH = 4000;
 
 class ZoomLevel {
   /**
@@ -489,8 +571,8 @@ class ZoomLevel {
       return currZoomLevel;
     }
 
-    // 2.5x of "fit" state, but not larger than original
-    currZoomLevel = Math.min(1, this.fit * 2.5);
+    // 3x of "fit" state, but not larger than original
+    currZoomLevel = Math.min(1, this.fit * 3);
 
     if (currZoomLevel * this.elementSize.x > MAX_IMAGE_WIDTH) {
       currZoomLevel = MAX_IMAGE_WIDTH / this.elementSize.x;
@@ -526,32 +608,6 @@ class ZoomLevel {
     // used for zoom gesture and ctrl/trackpad zoom
     return Math.max(1, this.fit * 4);
   }
-}
-
-function getViewportSize(options, pswp) {
-  if (options.getViewportSizeFn) {
-    const newViewportSize = options.getViewportSizeFn(options, pswp);
-    if (newViewportSize) {
-      return newViewportSize;
-    }
-  }
-
-  return {
-    x: document.documentElement.clientWidth,
-
-    // TODO: height on mobile is very incosistent due to toolbar
-    // find a way to improve this
-    //
-    // document.documentElement.clientHeight - doesn't seem to work well
-    y: window.innerHeight
-  };
-}
-
-function getPanAreaSize(options, viewportSize/*, pswp*/) {
-  return {
-    x: viewportSize.x - (options.paddingLeft || 0) - (options.paddingRight || 0),
-    y: viewportSize.y - (options.paddingTop || 0) - (options.paddingBottom || 0)
-  };
 }
 
 class Placeholder {
@@ -631,8 +687,7 @@ class Slide {
       y: 0
     };
 
-    const ContentClass = this.pswp.getContentClass(this.data, index);
-    this.content = new ContentClass(this.data, pswp, this);
+    this.content = this.pswp.contentLoader.getContentBySlide(this);
 
     this.currZoomLevel = 1;
     this.width = this.content.width;
@@ -699,7 +754,7 @@ class Slide {
   }
 
   removePlaceholder() {
-    if (this.placeholder) {
+    if (this.placeholder && this.content && !this.content.keepPlaceholder()) {
       // With delay, as image might be loaded, but not decoded
       setTimeout(() => {
         if (this.placeholder) {
@@ -712,15 +767,18 @@ class Slide {
 
   load() {
     if (this.usePlaceholder() && !this.placeholder) {
-      const useImagePlaceholder = this.data.msrc && this.isFirstSlide;
+      const placeholderSrc = this.pswp.applyFilters(
+        'placeholderSrc',
+        (this.data.msrc && this.isFirstSlide) ? this.data.msrc : false,
+        this
+      );
       this.placeholder = new Placeholder(
-        useImagePlaceholder ? this.data.msrc : false,
+        placeholderSrc,
         this.container
       );
     }
 
     this.content.load();
-    this.pswp.lazyLoader.addRecent(this.index);
     this.pswp.dispatch('slideLoad', { slide: this });
   }
 
@@ -752,7 +810,7 @@ class Slide {
       this.displayError();
     } else {
       this.content.appendTo(this.container);
-      if (this.placeholder && this.content.state !== LOAD_STATE.LOADING) {
+      if (this.placeholder && this.content.state === LOAD_STATE.LOADED) {
         this.removePlaceholder();
       }
     }
@@ -822,7 +880,7 @@ class Slide {
    * (unbind all events and destroy internal components)
    */
   destroy() {
-    this.content.destroy();
+    this.content.remove();
     this.pswp.dispatch('slideDestroy', { slide: this });
   }
 
@@ -1899,7 +1957,7 @@ class Gestures {
 
     pswp.animations.stopAll();
 
-    this._updatePoints(e);
+    this._updatePoints(e, 'down');
 
     this.pointerDown = true;
 
@@ -1926,7 +1984,7 @@ class Gestures {
       return;
     }
 
-    this._updatePoints(e);
+    this._updatePoints(e, 'move');
 
     if (this.pswp.dispatch('pointerMove', { originalEvent: e }).defaultPrevented) {
       return;
@@ -1996,7 +2054,7 @@ class Gestures {
       return;
     }
 
-    this._updatePoints(e, true);
+    this._updatePoints(e, 'up');
 
     if (this.pswp.dispatch('pointerUp', { originalEvent: e }).defaultPrevented) {
       return;
@@ -2155,19 +2213,19 @@ class Gestures {
    * Updates p1 and p2.
    *
    * @param {Event} e
-   * @param {Boolean} isPointerUp
+   * @param {String} pointerType Normalized pointer type ('up', 'down' or 'move')
    */
-  _updatePoints(e, isPointerUp) {
+  _updatePoints(e, pointerType) {
     if (this._pointerEventEnabled) {
       // Try to find the current pointer in ongoing pointers by its ID
       const pointerIndex = this._ongoingPointers.findIndex((ongoingPoiner) => {
         return ongoingPoiner.id === e.pointerId;
       });
 
-      if (isPointerUp && pointerIndex > -1) {
+      if (pointerType === 'up' && pointerIndex > -1) {
         // release the pointer - remove it from ongoing
         this._ongoingPointers.splice(pointerIndex, 1);
-      } else if (!isPointerUp && pointerIndex === -1) {
+      } else if (pointerType === 'down' && pointerIndex === -1) {
         // add new pointer
         this._ongoingPointers.push(this._convertEventPosToPoint(e, {}));
       } else if (pointerIndex > -1) {
@@ -2202,7 +2260,7 @@ class Gestures {
       } else {
         // Mouse Event
         this._convertEventPosToPoint(e, this.p1);
-        if (isPointerUp) {
+        if (pointerType === 'up') {
           // clear all points on mouseup
           this._numActivePoints = 0;
         } else {
@@ -2526,7 +2584,7 @@ class MainScroll {
     });
 
     pswp.currSlide = this.itemHolders[1].slide;
-    pswp.lazyLoader.update(positionDifference);
+    pswp.contentLoader.updateLazy(positionDifference);
 
     pswp.currSlide.applyCurrentZoomPan();
     pswp.dispatch('change');
@@ -3476,58 +3534,17 @@ class UI {
   }
 }
 
-/**
- * Get dimensions of thumbnail image
- * (click on which opens photoswipe or closes photoswipe to)
- *
- * @param {Integer} index
- * @param {Object} itemData
- * @param {PhotoSwipe} instance PhotoSwipe instance
- */
-function getThumbBounds(index, itemData, instance) {
-  const event = instance.dispatch('thumbBounds', {
-    index,
-    itemData,
-    instance
-  });
+function getBoundsByElement(el) {
+  const thumbAreaRect = el.getBoundingClientRect();
+  return {
+    x: thumbAreaRect.left,
+    y: thumbAreaRect.top,
+    w: thumbAreaRect.width
+  };
+}
 
-  if (event.thumbBounds) {
-    return event.thumbBounds;
-  }
-
-  const { element } = itemData;
-
-  if (!element
-      || instance.options.thumbSelector === false) {
-    return;
-  }
-
-  const thumbSelector = instance.options.thumbSelector || 'img';
-  const thumbnail = element.matches(thumbSelector)
-    ? element : element.querySelector(thumbSelector);
-
-  if (!thumbnail) {
-    return;
-  }
-
-  const thumbAreaRect = thumbnail.getBoundingClientRect();
-
-  if (!itemData.thumbCropped) {
-    return {
-      x: thumbAreaRect.left,
-      y: thumbAreaRect.top,
-      w: thumbAreaRect.width
-    };
-  }
-
-  // get dimensions of the large image,
-  // its aspect ratio must match thumbnail image
-  const imageWidth = itemData.w;
-  const imageHeight = itemData.h;
-
-  if (!imageWidth || !imageHeight) {
-    return;
-  }
+function getCroppedBoundsByElement(el, imageWidth, imageHeight) {
+  const thumbAreaRect = el.getBoundingClientRect();
 
   // fill image into the area
   // (do they same as object-fit:cover does to retrieve coordinates)
@@ -3559,143 +3576,48 @@ function getThumbBounds(index, itemData, instance) {
   return bounds;
 }
 
-// This much recently lazy-loaded images will not be lazy-loaded again
-const MAX_SLIDES_TO_LAZY_LOAD = 15;
-
 /**
- * Lazy-load an image
- * This function is used both by Lightbox and PhotoSwipe core,
- * thus it can be called before dialog is opened.
+ * Get dimensions of thumbnail image
+ * (click on which opens photoswipe or closes photoswipe to)
  *
- * @param {Object} itemData Data about the slide
- * @param {PhotoSwipeBase}  instance PhotoSwipe or PhotoSwipeLightbox
- * @returns {Object|Boolean} Image that is being decoded or false.
+ * @param {Integer} index
+ * @param {Object} itemData
+ * @param {PhotoSwipe} instance PhotoSwipe instance
+ * @returns Object|undefined
  */
-function lazyLoadData(itemData, instance) {
-  const ContentClass = instance.getContentClass(itemData);
-
-  if (!ContentClass) {
-    return;
+function getThumbBounds(index, itemData, instance) {
+  // legacy event, before filters were introduced
+  const event = instance.dispatch('thumbBounds', {
+    index,
+    itemData,
+    instance
+  });
+  if (event.thumbBounds) {
+    return event.thumbBounds;
   }
 
-  // src/slide/content/content.js
-  const content = new ContentClass(itemData, instance);
+  const { element } = itemData;
+  let thumbBounds;
 
-  if (!content.lazyLoad) {
-    return;
-  }
+  if (element && instance.options.thumbSelector !== false) {
+    const thumbSelector = instance.options.thumbSelector || 'img';
+    const thumbnail = element.matches(thumbSelector)
+      ? element : element.querySelector(thumbSelector);
 
-  const { options } = instance;
-
-  // We need to know dimensions of the image to preload it,
-  // as it might use srcset and we need to define sizes
-  const viewportSize = instance.viewportSize || getViewportSize(options);
-  const panAreaSize = getPanAreaSize(options, viewportSize);
-
-  const zoomLevel = new ZoomLevel(options, itemData, -1);
-  zoomLevel.update(content.width, content.height, panAreaSize);
-
-  content.lazyLoad();
-  content.setDisplayedSize(
-    Math.ceil(content.width * zoomLevel.initial),
-    Math.ceil(content.height * zoomLevel.initial)
-  );
-}
-
-/**
- * Lazy-loads specific slide.
- * This function is used both by Lightbox and PhotoSwipe core,
- * thus it can be called before dialog is opened.
- *
- * By default it loads image based on viewport size and initial zoom level.
- *
- * @param {Integer} index Slide index
- * @param {Object}  instance PhotoSwipe or PhotoSwipeLightbox eventable instance
- */
-function lazyLoadSlide(index, instance) {
-  const itemData = instance.getItemData(index);
-
-  if (instance.dispatch('lazyLoadSlide', { index, itemData }).defaultPrevented) {
-    return;
-  }
-
-  lazyLoadData(itemData, instance);
-}
-
-class LazyLoader {
-  constructor(pswp) {
-    this.pswp = pswp;
-    this.clearRecent();
-  }
-
-  /**
-   * Lazy load nearby slides based on `preload` option.
-   *
-   * @param {Integer} diff Difference between slide indexes that was changed recently, or 0.
-   */
-  update(diff) {
-    const { pswp } = this;
-
-    if (pswp.dispatch('lazyLoad').defaultPrevented) {
-      return;
-    }
-
-    const { preload } = pswp.options;
-    const isForward = diff === undefined ? true : (diff >= 0);
-    let i;
-
-    // preload[1] - num items to preload in forward direction
-    for (i = 0; i <= preload[1]; i++) {
-      this.loadSlideByIndex(pswp.currIndex + (isForward ? i : (-i)));
-    }
-
-    // preload[0] - num items to preload in backward direction
-    for (i = 1; i <= preload[0]; i++) {
-      this.loadSlideByIndex(pswp.currIndex + (isForward ? (-i) : i));
+    if (thumbnail) {
+      if (!itemData.thumbCropped) {
+        thumbBounds = getBoundsByElement(thumbnail);
+      } else {
+        thumbBounds = getCroppedBoundsByElement(
+          thumbnail,
+          itemData.w,
+          itemData.h
+        );
+      }
     }
   }
 
-  clearRecent() {
-    this._recentlyLazyLoadedIndexes = [];
-  }
-
-  /**
-   * Add index to recently lazy-loaded slides.
-   *
-   * To prevent duplciate downloads,
-   * we keep track of recently preloaded slides.
-   *
-   * @param {Integer} index
-   */
-  addRecent(index) {
-    if (this._recentlyLazyLoadedIndexes.indexOf(index) > -1) {
-      // already exists
-      return;
-    }
-
-    if (this._recentlyLazyLoadedIndexes.length > MAX_SLIDES_TO_LAZY_LOAD - 1) {
-      this._recentlyLazyLoadedIndexes.pop();
-    }
-
-    // the most recent lazy loaded index is the first
-    // (thus push to the beginning)
-    this._recentlyLazyLoadedIndexes.unshift(index);
-
-    return true;
-  }
-
-  loadSlideByIndex(index) {
-    index = this.pswp.getLoopedIndex(index);
-
-    if (this.addRecent(index)) {
-      lazyLoadSlide(index, this.pswp);
-    }
-  }
-
-  // @see lazyLoadData
-  loadSlideByData(data, decode) {
-    lazyLoadData(data, this.pswp);
-  }
+  return instance.applyFilters('thumbBounds', thumbBounds, itemData, index);
 }
 
 /**
@@ -3721,6 +3643,39 @@ class PhotoSwipeEvent {
 class Eventable {
   constructor() {
     this._listeners = {};
+    this._filters = {};
+  }
+
+  addFilter(name, fn, priority = 100) {
+    if (!this._filters[name]) {
+      this._filters[name] = [];
+    }
+
+    this._filters[name].push({ fn, priority });
+    this._filters[name].sort((f1, f2) => f1.priority - f2.priority);
+
+    if (this.pswp) {
+      this.pswp.addFilter(name, fn, priority);
+    }
+  }
+
+  removeFilter(name, fn) {
+    if (this._filters[name]) {
+      this._filters[name] = this._filters[name].filter(filter => (filter.fn !== fn));
+    }
+
+    if (this.pswp) {
+      this.pswp.removeFilter(name, fn);
+    }
+  }
+
+  applyFilters(name, ...args) {
+    if (this._filters[name]) {
+      this._filters[name].forEach((filter) => {
+        args[0] = filter.fn.apply(this, args);
+      });
+    }
+    return args[0];
   }
 
   on(name, fn) {
@@ -3776,20 +3731,21 @@ class Content {
    *                                can be undefined if image was requested by something else
    *                                (for example by lazy-loader)
    */
-  constructor(itemData, instance, slide) {
+  constructor(itemData, instance) {
     this.options = instance.options;
     this.instance = instance;
     this.data = itemData;
 
-    if (slide) {
-      this.slide = slide;
-      this.pswp = slide.pswp;
-    }
-
     this.width = Number(this.data.w) || Number(this.data.width) || 0;
     this.height = Number(this.data.h) || Number(this.data.height) || 0;
 
+    this.isAttached = false;
     this.state = LOAD_STATE.IDLE;
+  }
+
+  setSlide(slide) {
+    this.slide = slide;
+    this.pswp = slide.pswp;
   }
 
   /**
@@ -3837,6 +3793,11 @@ class Content {
     }
   }
 
+  // If the placeholder should be kept in DOM
+  keepPlaceholder() {
+    return (this.state === LOAD_STATE.LOADING);
+  }
+
   onError() {
     this.state = LOAD_STATE.ERROR;
 
@@ -3850,7 +3811,16 @@ class Content {
     return false;
   }
 
+
+  remove() {
+    this.isAttached = false;
+    if (this.element && this.element.parentNode) {
+      this.element.remove();
+    }
+  }
+
   appendTo(container) {
+    this.isAttached = true;
     if (this.element && !this.element.parentNode) {
       container.appendChild(this.element);
     }
@@ -3941,6 +3911,8 @@ class ImageContent extends Content {
   }
 
   appendTo(container) {
+    this.isAttached = true;
+
     // Use decode() on nearby slides
     //
     // Nearby slide images are in DOM and not hidden via display:none.
@@ -3954,9 +3926,16 @@ class ImageContent extends Content {
     // as browser can render parts of image while it is loading.
     if (this.slide && !this.slide.isActive && ('decode' in this.element)) {
       this.isDecoding = true;
-      this.element.decode().finally(() => {
-        this.isDecoding = false;
-        this.appendImageTo(container);
+      // Make sure that we start decoding on the next frame
+      requestAnimationFrame(() => {
+        if (this.element) {
+          this.element.decode().then(() => {
+            this.isDecoding = false;
+            requestAnimationFrame(() => {
+              this.appendImageTo(container);
+            });
+          }).catch(() => {});
+        }
       });
     } else {
       this.appendImageTo(container);
@@ -3965,6 +3944,8 @@ class ImageContent extends Content {
 
   activate() {
     if (this.slide && this.slide.container && this.isDecoding) {
+      // add image to slide when it becomes active,
+      // even if it's not finished decoding
       this.appendImageTo(this.slide.container);
     }
   }
@@ -3981,7 +3962,7 @@ class ImageContent extends Content {
 
   appendImageTo(container) {
     // ensure that element exists and is not already appended
-    if (this.element && !this.element.parentNode) {
+    if (this.element && !this.element.parentNode && this.isAttached) {
       container.appendChild(this.element);
     }
   }
@@ -3995,7 +3976,10 @@ class ImageContent extends Content {
 class PhotoSwipeBase extends Eventable {
   constructor() {
     super();
-    this.contentTypes = {};
+    this.contentTypes = {
+      image: ImageContent,
+      html: Content
+    };
   }
 
   /**
@@ -4020,13 +4004,12 @@ class PhotoSwipeBase extends Eventable {
       }
     }
 
-    // allow to filter number of items
+    // legacy event, before filters were introduced
     const event = this.dispatch('numItems', {
       dataSource,
       numItems
     });
-
-    return event.numItems;
+    return this.applyFilters('numItems', event.numItems, dataSource);
   }
 
   /**
@@ -4047,17 +4030,19 @@ class PhotoSwipeBase extends Eventable {
    * @returns Class
    */
   getContentClass(slideData) {
-    let cType = 'image';
-
-    if (slideData.type && this.contentTypes[slideData.type]) {
-      cType = slideData.type;
+    if (slideData.type) {
+      return this.contentTypes[slideData.type];
     } else if (slideData.src) {
-      return ImageContent;
+      return this.contentTypes.image;
     } else if (slideData.html) {
-      return Content;
+      return this.contentTypes.html;
     }
+  }
 
-    return this.contentTypes[cType];
+  createContentFromData(slideData) {
+    const ContentClass = this.getContentClass(slideData);
+    const content = new ContentClass(slideData, this);
+    return content;
   }
 
   /**
@@ -4094,13 +4079,14 @@ class PhotoSwipeBase extends Eventable {
       itemData = this._domElementToItemData(itemData);
     }
 
-    // allow to filter itemData
+    // Dispatching the itemData event,
+    // it's a legacy verion before filters were introduced
     const event = this.dispatch('itemData', {
       itemData: itemData || {},
       index
     });
 
-    return event.itemData;
+    return this.applyFilters('itemData', event.itemData, index);
   }
 
   /**
@@ -4134,35 +4120,35 @@ class PhotoSwipeBase extends Eventable {
 
     const linkEl = element.tagName === 'A' ? element : element.querySelector('a');
 
-    if (!linkEl) {
-      return itemData;
+    if (linkEl) {
+      // src comes from data-pswp-src attribute,
+      // if it's empty link href is used
+      itemData.src = linkEl.dataset.pswpSrc || linkEl.href;
+
+      itemData.srcset = linkEl.dataset.pswpSrcset;
+
+      itemData.w = parseInt(linkEl.dataset.pswpWidth, 10);
+      itemData.h = parseInt(linkEl.dataset.pswpHeight, 10);
+
+      if (linkEl.dataset.pswpType) {
+        itemData.type = linkEl.dataset.pswpType;
+      }
+
+      const thumbnailEl = element.querySelector('img');
+
+      if (thumbnailEl) {
+        // define msrc only if it's the first slide,
+        // as rendering (even small stretched thumbnail) is an expensive operation
+        itemData.msrc = thumbnailEl.currentSrc || thumbnailEl.src;
+        itemData.alt = thumbnailEl.getAttribute('alt');
+      }
+
+      if (linkEl.dataset.pswpCropped || linkEl.dataset.cropped) {
+        itemData.thumbCropped = true;
+      }
     }
 
-    // src comes from data-pswp-src attribute,
-    // if it's empty link href is used
-    itemData.src = linkEl.dataset.pswpSrc || linkEl.href;
-
-    itemData.srcset = linkEl.dataset.pswpSrcset;
-
-    itemData.w = parseInt(linkEl.dataset.pswpWidth, 10);
-    itemData.h = parseInt(linkEl.dataset.pswpHeight, 10);
-
-    if (linkEl.dataset.pswpType) {
-      itemData.type = linkEl.dataset.pswpType;
-    }
-
-    const thumbnailEl = element.querySelector('img');
-
-    if (thumbnailEl) {
-      // define msrc only if it's the first slide,
-      // as rendering (even small stretched thumbnail) is an expensive operation
-      itemData.msrc = thumbnailEl.currentSrc || thumbnailEl.src;
-      itemData.alt = thumbnailEl.getAttribute('alt');
-    }
-
-    if (linkEl.dataset.cropped) {
-      itemData.thumbCropped = true;
-    }
+    this.applyFilters('domItemData', itemData, element, linkEl);
 
     return itemData;
   }
@@ -4523,6 +4509,191 @@ class Opener {
   }
 }
 
+const MIN_SLIDES_TO_CACHE = 5;
+
+/**
+ * Returns cache key by slide index and data
+ *
+ * @param {Object} itemData
+ * @param {Integer} index
+ * @returns {String}
+ */
+function getKey(itemData, index) {
+  if (itemData && itemData.src) {
+    return itemData.src + '_' + index;
+  }
+  return index;
+}
+
+
+/**
+ * Lazy-load an image
+ * This function is used both by Lightbox and PhotoSwipe core,
+ * thus it can be called before dialog is opened.
+ *
+ * @param {Object} itemData Data about the slide
+ * @param {PhotoSwipeBase}  instance PhotoSwipe or PhotoSwipeLightbox
+ * @param {Integer} index
+ * @returns {Object|Boolean} Image that is being decoded or false.
+ */
+function lazyLoadData(itemData, instance, index) {
+  // src/slide/content/content.js
+  const content = instance.createContentFromData(itemData);
+
+  if (!content || !content.lazyLoad) {
+    return;
+  }
+
+  content.key = getKey(itemData, index);
+
+  const { options } = instance;
+
+  // We need to know dimensions of the image to preload it,
+  // as it might use srcset and we need to define sizes
+  const viewportSize = instance.viewportSize || getViewportSize(options);
+  const panAreaSize = getPanAreaSize(options, viewportSize);
+
+  const zoomLevel = new ZoomLevel(options, itemData, -1);
+  zoomLevel.update(content.width, content.height, panAreaSize);
+
+  content.lazyLoad();
+  content.setDisplayedSize(
+    Math.ceil(content.width * zoomLevel.initial),
+    Math.ceil(content.height * zoomLevel.initial)
+  );
+
+  return content;
+}
+
+
+/**
+ * Lazy-loads specific slide.
+ * This function is used both by Lightbox and PhotoSwipe core,
+ * thus it can be called before dialog is opened.
+ *
+ * By default it loads image based on viewport size and initial zoom level.
+ *
+ * @param {Integer} index Slide index
+ * @param {Object}  instance PhotoSwipe or PhotoSwipeLightbox eventable instance
+ */
+function lazyLoadSlide(index, instance) {
+  const itemData = instance.getItemData(index);
+
+  if (instance.dispatch('lazyLoadSlide', { index, itemData }).defaultPrevented) {
+    return;
+  }
+
+  return lazyLoadData(itemData, instance, index);
+}
+
+
+class ContentLoader {
+  constructor(pswp) {
+    this.pswp = pswp;
+    // Total amount of cached images
+    this.limit = Math.max(
+      pswp.options.preload[0] + pswp.options.preload[1] + 1,
+      MIN_SLIDES_TO_CACHE
+    );
+    this._cachedItems = [];
+  }
+
+  /**
+   * Lazy load nearby slides based on `preload` option.
+   *
+   * @param {Integer} diff Difference between slide indexes that was changed recently, or 0.
+   */
+  updateLazy(diff) {
+    const { pswp } = this;
+
+    if (pswp.dispatch('lazyLoad').defaultPrevented) {
+      return;
+    }
+
+    const { preload } = pswp.options;
+    const isForward = diff === undefined ? true : (diff >= 0);
+    let i;
+
+    // preload[1] - num items to preload in forward direction
+    for (i = 0; i <= preload[1]; i++) {
+      this.loadSlideByIndex(pswp.currIndex + (isForward ? i : (-i)));
+    }
+
+    // preload[0] - num items to preload in backward direction
+    for (i = 1; i <= preload[0]; i++) {
+      this.loadSlideByIndex(pswp.currIndex + (isForward ? (-i) : i));
+    }
+  }
+
+  loadSlideByIndex(index) {
+    index = this.pswp.getLoopedIndex(index);
+    const itemData = this.pswp.getItemData(index);
+    const key = getKey(itemData, index);
+    let content = this.getContentByKey(key);
+    if (!content) {
+      content = lazyLoadSlide(index, this.pswp);
+      content.key = key;
+      this.addToCache(content);
+    }
+  }
+
+  getContentBySlide(slide) {
+    let content = this.getContentByKey(this.getKeyBySlide(slide));
+    if (!content) {
+      // create content if not found in cache
+      content = this.pswp.createContentFromData(slide.data);
+      content.key = this.getKeyBySlide(slide);
+      this.addToCache(content);
+    }
+    // assign slide to content
+    content.setSlide(slide);
+    return content;
+  }
+
+  /**
+   * @param {Content} content
+   */
+  addToCache(content) {
+    // move to the end of array
+    this.removeByKey(content.key);
+    this._cachedItems.push(content);
+
+    if (this._cachedItems.length > this.limit) {
+      // Destroy the first content that's not attached
+      const indexToRemove = this._cachedItems.findIndex(item => !item.isAttached);
+      if (indexToRemove !== -1) {
+        const removedItem = this._cachedItems.splice(indexToRemove, 1)[0];
+        removedItem.destroy();
+      }
+    }
+  }
+
+  /**
+   * Removes an image from cache, does not destroy() it, just removes.
+   *
+   * @param {String} key
+   */
+  removeByKey(key) {
+    const indexToRemove = this._cachedItems.findIndex(item => item.key === key);
+    if (indexToRemove !== -1) {
+      this._cachedItems.splice(indexToRemove, 1);
+    }
+  }
+
+  getContentByKey(key) {
+    return this._cachedItems.find(content => content.key === key);
+  }
+
+  getKeyBySlide(slide) {
+    return getKey(slide.data, slide.index);
+  }
+
+  destroy() {
+    this._cachedItems.forEach(content => content.destroy());
+    this._cachedItems = null;
+  }
+}
+
 const defaultOptions = {
   allowPanToNext: true,
   spacing: 0.1,
@@ -4550,11 +4721,7 @@ const defaultOptions = {
   index: 0,
   errorMsg: '<div class="pswp__error-msg"><a href="" target="_blank">The image</a> could not be loaded.</div>',
   preload: [1, 2],
-  easing: 'cubic-bezier(.4,0,.22,1)',
-  paddingTop: 0,
-  paddingBottom: 0,
-  paddingLeft: 0,
-  paddingRight: 0
+  easing: 'cubic-bezier(.4,0,.22,1)'
 };
 
 class PhotoSwipe extends PhotoSwipeBase {
@@ -4585,7 +4752,7 @@ class PhotoSwipe extends PhotoSwipeBase {
     this.gestures = new Gestures(this);
     this.opener = new Opener(this);
     this.keyboard = new Keyboard(this);
-    this.lazyLoader = new LazyLoader(this);
+    this.contentLoader = new ContentLoader(this);
   }
 
   init() {
@@ -4664,7 +4831,7 @@ class PhotoSwipe extends PhotoSwipeBase {
 
       this.appendHeavy();
 
-      this.lazyLoader.update();
+      this.contentLoader.updateLazy();
 
       this.events.add(window, 'resize', this._handlePageResize.bind(this));
       this.events.add(window, 'scroll', this._updatePageScrollOffset.bind(this));
@@ -4680,6 +4847,7 @@ class PhotoSwipe extends PhotoSwipeBase {
 
     this.on('loadError', (e) => {
       if (e.slide.heavyAppended) {
+        e.slide.removePlaceholder();
         e.slide.displayError();
       }
     });
@@ -4830,6 +4998,7 @@ class PhotoSwipe extends PhotoSwipeBase {
     this.scrollWrap.ontouchend = null;
 
     this.template.remove();
+    this.contentLoader.destroy();
     this.events.removeAll();
   }
 
