@@ -1509,11 +1509,11 @@ class PhotoSwipeDeepZoom {
           if (slideImage.srcset) {
             // adjust sizes attribute so it's based on primary image size,
             // and not based on full (tiled) size
-            if(!slideImage.dataset.largestUsedSize 
-                || slide.primaryImageWidth > slideImage.dataset.largestUsedSize) {
+            const prevSizes = parseInt(slideImage.sizes, 10);
+            if (prevSizes >= slide.primaryImageWidth) {
               slideImage.sizes = slide.primaryImageWidth + 'px';
+              slideImage.dataset.largestUsedSize = width;
             }
-            slideImage.dataset.largestUsedSize = width;
           }
 
           // scale image instead of changing width/height
