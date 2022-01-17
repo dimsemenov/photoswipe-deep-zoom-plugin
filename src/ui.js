@@ -31,6 +31,22 @@ class DeepZoomUI {
         e.zoomLevels.secondary = e.zoomLevels.max;
       }
     });
+
+
+    pswp.on('keydown', (e) => {
+      const origEvent = e.originalEvent;
+      let action;
+      if (origEvent.keyCode === 187) { // = (+)
+        action = 'ZoomIn';
+      } else if (origEvent.keyCode === 189) { // -
+        action = 'ZoomOut';
+      }
+      
+      if (action && !origEvent.metaKey && !origEvent.altKey && !origEvent.ctrlKey) {
+        e.preventDefault();
+        this['incremental' + action](false);
+      }
+    });
   }
 
 
