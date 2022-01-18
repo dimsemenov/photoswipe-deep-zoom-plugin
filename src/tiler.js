@@ -47,8 +47,8 @@ class Tiler {
 
     this._totalZoomifyTilesCount = 0;
     while (imageWidth > this.tileSize || imageHeight > this.tileSize) {
-      imageWidth = Math.floor(imageWidth / 2);
-      imageHeight = Math.floor(imageHeight / 2);
+      imageWidth = imageWidth / 2;
+      imageHeight = imageHeight / 2;
       this._addZoomifyLayer(imageWidth, imageHeight);
     }
     this._zoomifyLayers.reverse();
