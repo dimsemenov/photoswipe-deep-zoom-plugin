@@ -942,8 +942,8 @@ class Tiler {
 
     this._totalZoomifyTilesCount = 0;
     while (imageWidth > this.tileSize || imageHeight > this.tileSize) {
-      imageWidth = Math.floor(imageWidth / 2);
-      imageHeight = Math.floor(imageHeight / 2);
+      imageWidth = imageWidth / 2;
+      imageHeight = imageHeight / 2;
       this._addZoomifyLayer(imageWidth, imageHeight);
     }
     this._zoomifyLayers.reverse();
@@ -1205,6 +1205,22 @@ class DeepZoomUI {
         e.zoomLevels.secondary = e.zoomLevels.max;
       }
     });
+
+
+    pswp.on('keydown', (e) => {
+      const origEvent = e.originalEvent;
+      let action;
+      if (origEvent.keyCode === 187) { // = (+)
+        action = 'ZoomIn';
+      } else if (origEvent.keyCode === 189) { // -
+        action = 'ZoomOut';
+      }
+      
+      if (action && !origEvent.metaKey && !origEvent.altKey && !origEvent.ctrlKey) {
+        e.preventDefault();
+        this['incremental' + action](false);
+      }
+    });
   }
 
 
@@ -1253,6 +1269,27 @@ class DeepZoomUI {
         });
       }
     });
+
+    this.pswp.ui.registerElement({
+      name: 'zoomToStart',
+      title: 'Zoom to start position',
+      order: 8,
+      isButton: true,
+      html: {
+        isCustomSVG: true,
+        inner: '<path d="M16.02 8a7.4 7.4 0 00-5.3 2.12l-1.45-1.7L8 14.05l5.74-.36-1.4-1.66a5.4 5.4 0 11.13 8.04l-1.78 1.86A7.98 7.98 0 0024 16a8 8 0 00-7.97-8z" id="pswp__icn-zoom-to-start"/>',
+        outlineID: 'pswp__icn-zoom-to-start'
+      },
+      onClick: (e, zoomToStartBtnElement) => {
+        this.zoomToStart();
+        this.updateZoomOutButtonState(zoomToStartBtnElement);
+      },
+      onInit: (zoomToStartBtnElement) => {
+        pswp.on('zoomPanUpdate', () => {
+          this.updateZoomOutButtonState(zoomToStartBtnElement);
+        });
+      }
+    });
   }
 
   /**
@@ -1295,6 +1332,14 @@ class DeepZoomUI {
     this.pswp.zoomTo(
       destZoomLevel, 
       point,
+      this.pswp.options.zoomAnimationDuration
+    );
+  }
+
+  zoomToStart() {
+    this.pswp.zoomTo(
+      this.pswp.currSlide.zoomLevels.fit, 
+      false,
       this.pswp.options.zoomAnimationDuration
     );
   }
