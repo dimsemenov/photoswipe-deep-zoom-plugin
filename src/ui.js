@@ -44,6 +44,7 @@ class DeepZoomUI {
       
       if (action && !origEvent.metaKey && !origEvent.altKey && !origEvent.ctrlKey) {
         e.preventDefault();
+        origEvent.preventDefault();
         this['incremental' + action](false);
       }
     });
