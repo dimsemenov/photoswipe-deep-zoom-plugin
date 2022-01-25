@@ -98,18 +98,11 @@ https://example.com/images/my-image/TileGroup{zoomify_group}/{z}-{x}-{y}.jpg"
 
 Maximum size of the tiled image.
 
-#### `getTileUrlFn`
+#### `data-pswp-max-zoom-width`
 
-A function that should return the individual tile URL. For example:
+Optional. Controls how far the image can be zoomed, can be lower or higher than max-image-width.
 
-```
-getTileUrlFn: (slideData, x, y, z) {
-  return slideData.tileUrl
-        .replace('{x}', x)
-        .replace('{y}', y)
-        .replace('{z}', z);
-}
-```
+
 
 ### Tile sources
 
@@ -151,9 +144,41 @@ Zoom in and zoom out buttons in the toolbar.
 
 Will permanently display a low-resolution layer below the active one.
 
-### `forceWillChange: true`
+#### `forceWillChange: true`
 
 Will apply `will-change:transform` to the placeholder and the primary PhotoSwipe image.
+
+#### `getTileUrlFn`
+
+A function that should return the individual tile URL. For example:
+
+```
+getTileUrlFn: (slideData, x, y, z) {
+  return slideData.tileUrl
+        .replace('{x}', x)
+        .replace('{y}', y)
+        .replace('{z}', z);
+}
+```
+
+#### `maxTilePixelRatio: 1`
+
+The viewer will load higher resolution tiles earlier on high DPI screens.
+
+For example, if device pixel ratio is `2` (regular retina screen) and `maxTilePixelRatio: 2`, the viewer will render twice as many tiles.
+
+If device pixel ratio is higher than `maxTilePixelRatio`, the viewer will render tiles according to the `maxTilePixelRatio` option. If it is lower - it'll render according to the device pixel ratio.
+
+
+### Changelog
+
+#### v1.1
+
+- High dpi screens support, added option `maxTilePixelRatio`.
+- Added property `pswp-max-zoom-width` (`pswpMaxZoomWidth`) that allows increasing or reducing how far the slide can be zoomed.
+- The plugin now adjusts behaviour of the loading indicator, it's displayed when tiles are loading.
+- Added zoom keyboard shortcuts (`+` and `-`).
+- Added reset zoom button, it's displayed when zoomed beyond x3 of the initial state.
 
 
 ### Build
