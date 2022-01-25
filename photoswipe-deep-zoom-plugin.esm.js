@@ -1,3 +1,9 @@
+/**
+* PhotoSwipe Deep Zoom plugin
+* v1.1.0
+* by Dmytro Semenov
+* https://github.com/dimsemenov/photoswipe-deep-zoom-plugin
+*/
 function getTileKey(x, y, z) {
   return x + '_' + y + '_' + z;
 }
@@ -743,6 +749,16 @@ class TilesManager {
     }
   }
 
+  activeTilesLoaded() {
+    for(let key in this.tiles) {
+      let tile = this.tiles[key];
+      if (tile.isInActiveLayer && !tile.isFullyDisplayed && !tile.isFading) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   resetTilesRelations() {
     for(let key in this.tiles) {
       let tile = this.tiles[key];
@@ -909,6 +925,12 @@ class Tiler {
     this.maxWidth = this.data.maxWidth;
     this.maxHeight = this.data.maxHeight;
 
+    if (this.options.maxTilePixelRatio > 1 && window.devicePixelRatio > 1) {
+      this.tilePixelRatio = Math.min(window.devicePixelRatio, this.options.maxTilePixelRatio);
+    } else {
+      this.tilePixelRatio = 1;
+    }
+
     this.layers = [];
 
     this.manager = new TilesManager(this);
@@ -942,8 +964,8 @@ class Tiler {
 
     this._totalZoomifyTilesCount = 0;
     while (imageWidth > this.tileSize || imageHeight > this.tileSize) {
-      imageWidth = Math.floor(imageWidth / 2);
-      imageHeight = Math.floor(imageHeight / 2);
+      imageWidth = imageWidth / 2;
+      imageHeight = imageHeight / 2;
       this._addZoomifyLayer(imageWidth, imageHeight);
     }
     this._zoomifyLayers.reverse();
@@ -1034,18 +1056,17 @@ class Tiler {
    */
   updatePrimaryImageVisibility() {
     if (this.slide.primaryImageWidth
-      && this.width
-      && this.slide.primaryImageWidth >= this.width) {
-      
-      // if (!window.pswpTempTestVars || !window.pswpTempTestVars.zoom_primary_image) {
-      //   this.slide.image.style.display = 'block';
-      // }
-      return true;
-    }
+      && this.width) {
 
-    // if (!window.pswpTempTestVars || !window.pswpTempTestVars.zoom_primary_image) {
-    //   this.slide.image.style.display = 'none';
-    // }
+      // Do not show tiles if image is smaller than "fit" zoom level
+      if (this.width <= Math.round(this.pswp.currSlide.zoomLevels.fit * this.maxWidth)) {
+        return true;
+      }
+
+      if (this.slide.primaryImageWidth / this.tilePixelRatio >= this.width) {
+        return true;
+      }
+    }
 
     return false;
   }
@@ -1073,8 +1094,9 @@ class Tiler {
 
     // Always display the most optimal layer
     let newActiveLayer = this.layers.find((layer) => {
-      return layer.originalWidth >= this.width;
+      return (layer.originalWidth / this.tilePixelRatio) >= this.width;
     });
+
     if (!newActiveLayer) {
       newActiveLayer = this.layers[this.layers.length - 1];
     }
@@ -1199,12 +1221,24 @@ class DeepZoomUI {
       }
     });
 
-    // Make sure that secondary zoom level is always at maximum
-    pswp.on('zoomLevelsUpdate', (e) => {
-      if (e.slideData.tileUrl) {
-        e.zoomLevels.secondary = e.zoomLevels.max;
+
+    pswp.on('keydown', (e) => {
+      const origEvent = e.originalEvent;
+      let action;
+      if (origEvent.keyCode === 187) { // = (+)
+        action = 'ZoomIn';
+      } else if (origEvent.keyCode === 189) { // -
+        action = 'ZoomOut';
+      }
+      
+      if (action && !origEvent.metaKey && !origEvent.altKey && !origEvent.ctrlKey) {
+        e.preventDefault();
+        origEvent.preventDefault();
+        this['incremental' + action](false);
       }
     });
+
+    this.adjustPreloaderBehavior();
   }
 
 
@@ -1253,6 +1287,27 @@ class DeepZoomUI {
         });
       }
     });
+
+    this.pswp.ui.registerElement({
+      name: 'zoomToStart',
+      title: 'Zoom to start position',
+      order: 8,
+      isButton: true,
+      html: {
+        isCustomSVG: true,
+        inner: '<path d="M11.213 9.587 9.961 7.91l-1.852 5.794 6.082-.127-1.302-1.744a5.201 5.201 0 0 1 7.614 6.768 5.2 5.2 0 0 1-7.103 1.903L12 22.928a8 8 0 1 0-.787-13.34Z" id="pswp__icn-zoom-to-start"/>',
+        outlineID: 'pswp__icn-zoom-to-start'
+      },
+      onClick: (e, zoomToStartBtnElement) => {
+        this.zoomToStart();
+        this.updateZoomToStartButtonState(zoomToStartBtnElement);
+      },
+      onInit: (zoomToStartBtnElement) => {
+        pswp.on('zoomPanUpdate', () => {
+          this.updateZoomToStartButtonState(zoomToStartBtnElement);
+        });
+      }
+    });
   }
 
   /**
@@ -1276,6 +1331,30 @@ class DeepZoomUI {
     return closestZoomLevel;
   }
 
+  adjustPreloaderBehavior() {
+    this.pswp.on('afterInit', () => {
+      this.preloaderInterval = setInterval(() => {
+        if (!document.hidden && pswp.ui.updatePreloaderVisibility) {
+          pswp.ui.updatePreloaderVisibility();
+        }
+      }, 500);
+    });
+
+    this.pswp.addFilter('isSlideLoading', (isLoading, slide) => {
+      if (!isLoading && slide.tiler) {
+        return !slide.tiler.manager.activeTilesLoaded();
+      }
+      return isLoading;
+    });
+
+    this.pswp.on('destroy', () => {
+      if (this.preloaderInterval) {
+        clearInterval(this.preloaderInterval);
+        this.preloaderInterval = null;
+      }
+    });
+  }
+
   incrementalZoomIn(point) {
     const { tiler } = this.pswp.currSlide;
     let destZoomLevel;
@@ -1295,6 +1374,14 @@ class DeepZoomUI {
     this.pswp.zoomTo(
       destZoomLevel, 
       point,
+      this.pswp.options.zoomAnimationDuration
+    );
+  }
+
+  zoomToStart() {
+    this.pswp.zoomTo(
+      this.pswp.currSlide.zoomLevels.fit, 
+      false,
       this.pswp.options.zoomAnimationDuration
     );
   }
@@ -1341,6 +1428,18 @@ class DeepZoomUI {
       el.removeAttribute('disabled');
     }
   }
+
+  updateZoomToStartButtonState(el) {
+    if (!this.pswp.currSlide.currZoomLevel ||
+      !this.pswp.currSlide.isZoomable() ||
+      this.pswp.currSlide.currZoomLevel <= this.pswp.currSlide.zoomLevels.initial * 3) {
+      el.setAttribute('disabled', 'disabled');
+      el.style.display = 'none';
+    } else {
+      el.removeAttribute('disabled');
+      el.style.display = 'block';
+    }
+  }
 }
 
 const WHEEL_DEBOUNCE_DELAY = 85; // ms
@@ -1350,6 +1449,8 @@ const defaultOptions = {
   tileWidth: 256,
   tileOverlap: 0,
   incrementalZoomButtons: true,
+
+  maxTilePixelRatio: 2,
 
   forceWillChange: true,
 
@@ -1375,6 +1476,26 @@ class PhotoSwipeDeepZoom {
     
     pswp.on('itemData', (e) => {
       this.parseItemData(e.itemData);
+    });
+
+    
+    pswp.on('zoomLevelsUpdate', (e) => {
+      if (e.slideData.tileUrl) {
+        // Custom limit for the max zoom
+        if (e.slideData.maxZoomWidth) {
+          const maxWidth = e.slideData.maxZoomWidth;
+          if (maxWidth) {
+            const newMaxZoomLevel = maxWidth / e.zoomLevels.elementSize.x;
+            e.zoomLevels.max = Math.max(
+              e.zoomLevels.initial,
+              newMaxZoomLevel
+            );
+          }
+        }
+
+        // For incremental zoom buttons
+        e.zoomLevels.secondary = e.zoomLevels.max;
+      }
     });
 
     pswp.on('slideInit', (e) => {
@@ -1498,26 +1619,32 @@ class PhotoSwipeDeepZoom {
         this._setImgStyles(slide.placeholder.element, 5);
       }
 
-      this._setImgStyles(slideImage, 7);
+      
 
       const width = Math.round(slide.width * scaleMultiplier);
       const height = Math.round(slide.height * scaleMultiplier);
 
-      if (width >= slide.primaryImageWidth) {
-        if (slideImage.srcset) {
-          // adjust sizes attribute so it's based on primary image size,
-          // and not based on full (tiled) size
-          slideImage.sizes = slide.primaryImageWidth + 'px';
-          slideImage.dataset.largestUsedSize = width;
-        }
+      if (slideImage) {
+        this._setImgStyles(slideImage, 7);
+        if (width >= slide.primaryImageWidth) {
+          if (slideImage.srcset) {
+            // adjust sizes attribute so it's based on primary image size,
+            // and not based on full (tiled) size
+            const prevSizes = parseInt(slideImage.sizes, 10);
+            if (prevSizes >= slide.primaryImageWidth) {
+              slideImage.sizes = slide.primaryImageWidth + 'px';
+              slideImage.dataset.largestUsedSize = width;
+            }
+          }
 
-        // scale image instead of changing width/height
-        slideImage.style.width = slide.primaryImageWidth + 'px';
-        const scale  = width / slide.primaryImageWidth;
-        slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
-        slideImage.style.transformOrigin = '0 0';
-      } else {
-        slideImage.style.transform = 'none';
+          // scale image instead of changing width/height
+          slideImage.style.width = slide.primaryImageWidth + 'px';
+          const scale  = width / slide.primaryImageWidth;
+          slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
+          slideImage.style.transformOrigin = '0 0';
+        } else {
+          slideImage.style.transform = 'none';
+        }
       }
 
       slide.tiler.setSize(width, height);
@@ -1553,6 +1680,10 @@ class PhotoSwipeDeepZoom {
 
     if (linkEl.dataset.pswpMaxWidth) {
       itemData.maxWidth = parseInt(linkEl.dataset.pswpMaxWidth, 10);
+    }
+
+    if (linkEl.dataset.pswpMaxZoomWidth) {
+      itemData.maxZoomWidth = parseInt(linkEl.dataset.pswpMaxZoomWidth, 10);
     }
 
     if (linkEl.dataset.pswpMaxHeight) {
