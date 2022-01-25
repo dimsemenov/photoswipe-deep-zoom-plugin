@@ -154,6 +154,16 @@ class TilesManager {
     }
   }
 
+  activeTilesLoaded() {
+    for(let key in this.tiles) {
+      let tile = this.tiles[key];
+      if (tile.isInActiveLayer && !tile.isFullyDisplayed && !tile.isFading) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   resetTilesRelations() {
     for(let key in this.tiles) {
       let tile = this.tiles[key];
