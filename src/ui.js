@@ -48,6 +48,8 @@ class DeepZoomUI {
         this['incremental' + action](false);
       }
     });
+
+    this.adjustPreloaderBehavior();
   }
 
 
@@ -138,6 +140,30 @@ class DeepZoomUI {
       );
     });
     return closestZoomLevel;
+  }
+
+  adjustPreloaderBehavior() {
+    this.pswp.on('afterInit', () => {
+      this.preloaderInterval = setInterval(() => {
+        if (!document.hidden && pswp.ui.updatePreloaderVisibility) {
+          pswp.ui.updatePreloaderVisibility();
+        }
+      }, 500);
+    });
+
+    this.pswp.addFilter('isSlideLoading', (isLoading, slide) => {
+      if (!isLoading && slide.tiler) {
+        return !slide.tiler.manager.activeTilesLoaded();
+      }
+      return isLoading;
+    });
+
+    this.pswp.on('destroy', () => {
+      if (this.preloaderInterval) {
+        clearInterval(this.preloaderInterval);
+        this.preloaderInterval = null;
+      }
+    });
   }
 
   incrementalZoomIn(point) {
