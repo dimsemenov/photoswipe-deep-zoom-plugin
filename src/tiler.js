@@ -14,6 +14,12 @@ class Tiler {
     this.maxWidth = this.data.maxWidth;
     this.maxHeight = this.data.maxHeight;
 
+    if (this.options.maxTilePixelRatio > 1 && window.devicePixelRatio > 1) {
+      this.tilePixelRatio = Math.min(window.devicePixelRatio, this.options.maxTilePixelRatio);
+    } else {
+      this.tilePixelRatio = 1;
+    }
+
     this.layers = [];
 
     this.manager = new TilesManager(this);
@@ -143,18 +149,17 @@ class Tiler {
    */
   updatePrimaryImageVisibility() {
     if (this.slide.primaryImageWidth
-      && this.width
-      && this.slide.primaryImageWidth >= this.width) {
-      
-      // if (!window.pswpTempTestVars || !window.pswpTempTestVars.zoom_primary_image) {
-      //   this.slide.image.style.display = 'block';
-      // }
-      return true;
-    }
+      && this.width) {
 
-    // if (!window.pswpTempTestVars || !window.pswpTempTestVars.zoom_primary_image) {
-    //   this.slide.image.style.display = 'none';
-    // }
+      // Do not show tiles if image is smaller than "fit" zoom level
+      if (this.width <= Math.round(this.pswp.currSlide.zoomLevels.fit * this.maxWidth)) {
+        return true;
+      }
+
+      if (this.slide.primaryImageWidth / this.tilePixelRatio >= this.width) {
+        return true;
+      }
+    }
 
     return false;
   }
@@ -182,8 +187,9 @@ class Tiler {
 
     // Always display the most optimal layer
     let newActiveLayer = this.layers.find((layer) => {
-      return layer.originalWidth >= this.width;
+      return (layer.originalWidth / this.tilePixelRatio) >= this.width;
     });
+
     if (!newActiveLayer) {
       newActiveLayer = this.layers[this.layers.length - 1];
     }
