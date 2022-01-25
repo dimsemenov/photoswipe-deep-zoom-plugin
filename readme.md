@@ -25,7 +25,6 @@ const lightbox = new PhotoSwipeLightbox({
   allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
   allowMouseDrag: true, // display dragging cursor at max zoom level
   wheelToZoom: true, // enable wheel-based zoom
-  preloader: false, // disable default loading indicator
   zoom: false // disable default zoom button
 });
 
