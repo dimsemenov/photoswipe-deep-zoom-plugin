@@ -10,6 +10,8 @@ const defaultOptions = {
   tileOverlap: 0,
   incrementalZoomButtons: true,
 
+  maxTilePixelRatio: 2,
+
   forceWillChange: true,
 
   cacheLimit: 200,
@@ -34,6 +36,26 @@ class PhotoSwipeDeepZoom {
     
     pswp.on('itemData', (e) => {
       this.parseItemData(e.itemData)
+    });
+
+    
+    pswp.on('zoomLevelsUpdate', (e) => {
+      if (e.slideData.tileUrl) {
+        // Custom limit for the max zoom
+        if (e.slideData.maxZoomWidth) {
+          const maxWidth = e.slideData.maxZoomWidth;
+          if (maxWidth) {
+            const newMaxZoomLevel = maxWidth / e.zoomLevels.elementSize.x;
+            e.zoomLevels.max = Math.max(
+              e.zoomLevels.initial,
+              newMaxZoomLevel
+            );
+          }
+        }
+
+        // For incremental zoom buttons
+        e.zoomLevels.secondary = e.zoomLevels.max;
+      }
     });
 
     pswp.on('slideInit', (e) => {
@@ -218,6 +240,10 @@ class PhotoSwipeDeepZoom {
 
     if (linkEl.dataset.pswpMaxWidth) {
       itemData.maxWidth = parseInt(linkEl.dataset.pswpMaxWidth, 10);
+    }
+
+    if (linkEl.dataset.pswpMaxZoomWidth) {
+      itemData.maxZoomWidth = parseInt(linkEl.dataset.pswpMaxZoomWidth, 10);
     }
 
     if (linkEl.dataset.pswpMaxHeight) {
