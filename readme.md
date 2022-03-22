@@ -14,12 +14,13 @@ The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab 
 
 ```js
 import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
+import PhotoSwipe from './lib/photoswipe/photoswipe.esm.js';
 import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js';
 
 const lightbox = new PhotoSwipeLightbox({
   gallery: '#gallery',
   children: '.pswp-gallery__item',
-  pswpModule: 'lib/photoswipe/photoswipe.esm.js',
+  pswpModule: PhotoSwipe,
 
   // Recommended PhotoSwipe options for this plugin
   allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
@@ -35,6 +36,7 @@ const deepZoomPlugin = new PhotoSwipeDeepZoom(lightbox, {
 
 lightbox.init();
 ```
+
 
 HTML for a single slide:
 
@@ -169,16 +171,29 @@ For example, if device pixel ratio is `2` (regular retina screen) and `maxTilePi
 If device pixel ratio is higher than `maxTilePixelRatio`, the viewer will render tiles according to the `maxTilePixelRatio` option. If it is lower - it'll render according to the device pixel ratio.
 
 
-### Changelog
+### Dynamically import the plugin and core JS files
 
-#### v1.1
+```js
+import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@beta/dist/photoswipe-lightbox.esm.js';
+const lightbox = new PhotoSwipeLightbox({
+  gallery: '#gallery',
+  children: '.pswp-gallery__item > a',
 
-- High dpi screens support, added option `maxTilePixelRatio`.
-- Added property `pswp-max-zoom-width` (`pswpMaxZoomWidth`) that allows increasing or reducing how far the slide can be zoomed.
-- The plugin now adjusts behaviour of the loading indicator, it's displayed when tiles are loading.
-- Added zoom keyboard shortcuts (`+` and `-`).
-- Added reset zoom button, it's displayed when zoomed beyond x3 of the initial state.
-
+  pswpModule: () => import('https://unpkg.com/photoswipe@beta/dist/photoswipe.esm.js'),
+  openPromise: () => import('./photoswipe-deep-zoom-plugin.esm.js?v=1.1.0').then((deepZoomPluginModule) => {
+    new deepZoomPluginModule.default(lightbox, {
+      // deep zoom plugin options
+    });
+  }),
+  
+  // Recommended PhotoSwipe options for this plugin
+  allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
+  allowMouseDrag: true, // display dragging cursor at max zoom level
+  wheelToZoom: true, // enable wheel-based zoom
+  zoom: false // disable default zoom button
+});
+lightbox.init();
+```
 
 ### Build
 
@@ -193,3 +208,16 @@ To update GitHub pages:
 ```
 npm run publish:demo
 ```
+
+### Changelog
+
+#### v1.1
+
+- High dpi screens support, added option `maxTilePixelRatio`.
+- Added property `pswp-max-zoom-width` (`pswpMaxZoomWidth`) that allows increasing or reducing how far the slide can be zoomed.
+- The plugin now adjusts behaviour of the loading indicator, it's displayed when tiles are loading.
+- Added zoom keyboard shortcuts (`+` and `-`).
+- Added reset zoom button, it's displayed when zoomed beyond x3 of the initial state.
+
+
+

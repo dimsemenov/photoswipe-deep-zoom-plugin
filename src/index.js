@@ -37,7 +37,6 @@ class PhotoSwipeDeepZoom {
     pswp.on('itemData', (e) => {
       this.parseItemData(e.itemData)
     });
-
     
     pswp.on('zoomLevelsUpdate', (e) => {
       if (e.slideData.tileUrl) {
@@ -112,7 +111,6 @@ class PhotoSwipeDeepZoom {
       }
     });
 
-
     // Block tile loading until wheel acion is finished
     // (to prevent unnessesary tile reuqests)
     this._wheelTimeout = undefined;
@@ -178,8 +176,6 @@ class PhotoSwipeDeepZoom {
       if (slide.placeholder) {
         this._setImgStyles(slide.placeholder.element, 5);
       }
-
-      
 
       const width = Math.round(slide.width * scaleMultiplier);
       const height = Math.round(slide.height * scaleMultiplier);

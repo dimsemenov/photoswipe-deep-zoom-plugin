@@ -35,7 +35,7 @@ class Tile {
     imageStyles.willChange = 'transform';
 
     // debug
-    if (window.pswpTempTestVars && window.pswpTempTestVars.display_layer_borders) {
+    if (window.pswpDebug && window.pswpDebug.display_layer_borders) {
       let colors = ['red','blue','green','white','yellow','purple','black','orange','violet'];
       colors = colors.concat(colors).concat(colors).concat(colors).concat(colors);
       imageStyles.outline = 'solid 5px ' + colors[this.z];
@@ -146,8 +146,6 @@ class Tile {
         this.isFullyDisplayed = true;
         this.triggerDisplayed();
       });
-      
-     // this.resolveLoadedPromise();
       return;
     }
 

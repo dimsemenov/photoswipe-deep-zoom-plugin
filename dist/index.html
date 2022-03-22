@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width"/>
-    <link rel="stylesheet" href="./lib/photoswipe/photoswipe.css">
+    <link rel="stylesheet" href="https://unpkg.com/photoswipe@beta/dist/photoswipe.css">
 
     <!-- demo styles, ignore em-->
     <style>
@@ -162,45 +162,42 @@
     </div>
     <script>
       /* debug stuff */
-      window.pswpTempTestVars = {
+      window.pswpDebug = {
         display_layer_borders: false,
       };
-      for(let key in window.pswpTempTestVars) {
-        document.querySelector('#' + key).checked = window.pswpTempTestVars[key];
+      for(let key in window.pswpDebug) {
+        document.querySelector('#' + key).checked = window.pswpDebug[key];
       }
       [...document.querySelectorAll('.pswp-test input')].forEach((checkbox) => {
         checkbox.addEventListener('change', (e) => {
           if (e.currentTarget.checked) {
-            window.pswpTempTestVars[e.currentTarget.name] = true;
+            window.pswpDebug[e.currentTarget.name] = true;
           } else {
-            window.pswpTempTestVars[e.currentTarget.name] = false;
+            window.pswpDebug[e.currentTarget.name] = false;
           }
         });
       });
     </script>
 
     <script type="module">
-      import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js?v=5.1.6';
-      import PhotoSwipeDeepZoom from './photoswipe-deep-zoom-plugin.esm.js?v=1.0.1';
-
+      import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@beta/dist/photoswipe-lightbox.esm.js';
       const lightbox = new PhotoSwipeLightbox({
         gallery: '#gallery',
         children: '.pswp-gallery__item > a',
     
-        pswpModule: './photoswipe.esm.js?v=5.1.6',
+        pswpModule: () => import('https://unpkg.com/photoswipe@beta/dist/photoswipe.esm.js'),
+        openPromise: () => import('./photoswipe-deep-zoom-plugin.esm.js?v=1.1.0').then((deepZoomPluginModule) => {
+          new deepZoomPluginModule.default(lightbox, {
+            // deep zoom plugin options
+          });
+        }),
         
         // Recommended PhotoSwipe options for this plugin
         allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
         allowMouseDrag: true, // display dragging cursor at max zoom level
         wheelToZoom: true, // enable wheel-based zoom
-        preloader: false, // disable default loading indicator
         zoom: false // disable default zoom button
       });
-
-      const deepZoomPlugin = new PhotoSwipeDeepZoom(lightbox, {
-
-      });
-
       lightbox.init();
       </script>
     </div>
