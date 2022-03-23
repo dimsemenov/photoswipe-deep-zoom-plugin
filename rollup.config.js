@@ -10,7 +10,7 @@ const banner = `/**
 export default {
   input: "src/index.js",
   output: [
-    { file: "dist/photoswipe-deep-zoom-plugin.esm.js", format: "esm", banner },
-    { file: "dist/photoswipe-deep-zoom-plugin.esm.min.js", format: "esm", plugins: [ terser()], banner },
+    { file: "./photoswipe-deep-zoom-plugin.esm.js", format: "esm", banner },
+    { file: "./photoswipe-deep-zoom-plugin.esm.min.js", format: "esm", plugins: [ terser()], banner },
   ],
 };

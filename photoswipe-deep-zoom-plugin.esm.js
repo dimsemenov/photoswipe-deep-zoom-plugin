@@ -213,7 +213,7 @@ class Tile {
     imageStyles.willChange = 'transform';
 
     // debug
-    if (window.pswpTempTestVars && window.pswpTempTestVars.display_layer_borders) {
+    if (window.pswpDebug && window.pswpDebug.display_layer_borders) {
       let colors = ['red','blue','green','white','yellow','purple','black','orange','violet'];
       colors = colors.concat(colors).concat(colors).concat(colors).concat(colors);
       imageStyles.outline = 'solid 5px ' + colors[this.z];
@@ -323,8 +323,6 @@ class Tile {
         this.isFullyDisplayed = true;
         this.triggerDisplayed();
       });
-      
-     // this.resolveLoadedPromise();
       return;
     }
 
@@ -1477,7 +1475,6 @@ class PhotoSwipeDeepZoom {
     pswp.on('itemData', (e) => {
       this.parseItemData(e.itemData);
     });
-
     
     pswp.on('zoomLevelsUpdate', (e) => {
       if (e.slideData.tileUrl) {
@@ -1552,7 +1549,6 @@ class PhotoSwipeDeepZoom {
       }
     });
 
-
     // Block tile loading until wheel acion is finished
     // (to prevent unnessesary tile reuqests)
     this._wheelTimeout = undefined;
@@ -1619,8 +1615,6 @@ class PhotoSwipeDeepZoom {
         this._setImgStyles(slide.placeholder.element, 5);
       }
 
-      
-
       const width = Math.round(slide.width * scaleMultiplier);
       const height = Math.round(slide.height * scaleMultiplier);
 
@@ -1639,6 +1633,7 @@ class PhotoSwipeDeepZoom {
 
           // scale image instead of changing width/height
           slideImage.style.width = slide.primaryImageWidth + 'px';
+          slideImage.style.height = slide.primaryImageHeight + 'px';
           const scale  = width / slide.primaryImageWidth;
           slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
           slideImage.style.transformOrigin = '0 0';

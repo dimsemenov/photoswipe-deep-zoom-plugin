@@ -181,16 +181,25 @@
 
     <script type="module">
       import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@beta/dist/photoswipe-lightbox.esm.js';
+     
+      let deepZoomPlugin;
       const lightbox = new PhotoSwipeLightbox({
         gallery: '#gallery',
         children: '.pswp-gallery__item > a',
     
         pswpModule: () => import('https://unpkg.com/photoswipe@beta/dist/photoswipe.esm.js'),
-        openPromise: () => import('./photoswipe-deep-zoom-plugin.esm.js?v=1.1.0').then((deepZoomPluginModule) => {
-          new deepZoomPluginModule.default(lightbox, {
-            // deep zoom plugin options
-          });
-        }),
+
+        // dynamically load deep zoom plugin
+        openPromise: () => {
+          // make sure it's initialized only once per lightbox
+          if (!deepZoomPlugin) {
+            return import('./src/index.js').then((deepZoomPluginModule) => {
+              deepZoomPlugin = new deepZoomPluginModule.default(lightbox, {
+                // deep zoom plugin options
+              });
+            })
+          }
+        },
         
         // Recommended PhotoSwipe options for this plugin
         allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
