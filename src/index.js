@@ -195,6 +195,7 @@ class PhotoSwipeDeepZoom {
 
           // scale image instead of changing width/height
           slideImage.style.width = slide.primaryImageWidth + 'px';
+          slideImage.style.height = slide.primaryImageHeight + 'px';
           const scale  = width / slide.primaryImageWidth;
           slideImage.style.transform = 'scale3d('+scale+','+scale+',1)';
           slideImage.style.transformOrigin = '0 0';
