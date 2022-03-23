@@ -10,7 +10,9 @@ If you just want to display a single tiled image, consider using OpenLayers, Ope
 
 ### Initialization
 
-The plugin requires a single JS file `photoswipe-deep-zoom-plugin.esm.js`, grab it from the [dist/](dist/), an example is there too. To view source code visit [src/](src/).
+The plugin requires a single JS file [photoswipe-deep-zoom-plugin.esm.js](photoswipe-deep-zoom-plugin.esm.js). To view the source code visit [src/](src/).
+
+Or install via NPM `npm install photoswipe-deep-zoom-plugin`.
 
 ```js
 import PhotoSwipeLightbox from './lib/photoswipe/photoswipe-lightbox.esm.js';
@@ -171,29 +173,6 @@ For example, if device pixel ratio is `2` (regular retina screen) and `maxTilePi
 If device pixel ratio is higher than `maxTilePixelRatio`, the viewer will render tiles according to the `maxTilePixelRatio` option. If it is lower - it'll render according to the device pixel ratio.
 
 
-### Dynamically import the plugin and core JS files
-
-```js
-import PhotoSwipeLightbox from 'https://unpkg.com/photoswipe@beta/dist/photoswipe-lightbox.esm.js';
-const lightbox = new PhotoSwipeLightbox({
-  gallery: '#gallery',
-  children: '.pswp-gallery__item > a',
-
-  pswpModule: () => import('https://unpkg.com/photoswipe@beta/dist/photoswipe.esm.js'),
-  openPromise: () => import('./photoswipe-deep-zoom-plugin.esm.js?v=1.1.0').then((deepZoomPluginModule) => {
-    new deepZoomPluginModule.default(lightbox, {
-      // deep zoom plugin options
-    });
-  }),
-  
-  // Recommended PhotoSwipe options for this plugin
-  allowPanToNext: false, // prevent swiping to the next slide when image is zoomed
-  allowMouseDrag: true, // display dragging cursor at max zoom level
-  wheelToZoom: true, // enable wheel-based zoom
-  zoom: false // disable default zoom button
-});
-lightbox.init();
-```
 
 ### Build
 
