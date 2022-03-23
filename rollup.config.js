@@ -1,8 +1,9 @@
 import { terser } from "rollup-plugin-terser";
+import { version } from "./package.json";
 
 const banner = `/**
 * PhotoSwipe Deep Zoom plugin
-* v1.1.0
+* v${version}
 * by Dmytro Semenov
 * https://github.com/dimsemenov/photoswipe-deep-zoom-plugin
 */`;
