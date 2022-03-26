@@ -1,6 +1,6 @@
 /**
 * PhotoSwipe Deep Zoom plugin
-* v1.1.0
+* v1.1.1
 * by Dmytro Semenov
 * https://github.com/dimsemenov/photoswipe-deep-zoom-plugin
 */
