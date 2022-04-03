@@ -1,6 +1,6 @@
 /**
 * PhotoSwipe Deep Zoom plugin
-* v1.1.1
+* v1.1.2
 * by Dmytro Semenov
 * https://github.com/dimsemenov/photoswipe-deep-zoom-plugin
 */
@@ -1338,9 +1338,9 @@ class DeepZoomUI {
       }, 500);
     });
 
-    this.pswp.addFilter('isSlideLoading', (isLoading, slide) => {
-      if (!isLoading && slide.tiler) {
-        return !slide.tiler.manager.activeTilesLoaded();
+    this.pswp.addFilter('isContentLoading', (isLoading, content) => {
+      if (!isLoading && content.slide && content.slide.tiler) {
+        return !content.slide.tiler.manager.activeTilesLoaded();
       }
       return isLoading;
     });
